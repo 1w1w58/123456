@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>贪吃蛇对战</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; width: 100%; font-family: 'Segoe UI','Roboto','Arial',sans-serif; background: #050a18; color: #e0e6ff; overflow: hidden; }
+    #app { height: 100%; width: 100%; position: relative; }
+
+    .neon-grid-bg { position: absolute; inset: 0; background-image: linear-gradient(rgba(0,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,0,255,0.04) 1px,transparent 1px); background-size: 40px 40px; animation: grid-pan 20s linear infinite; pointer-events: none; }
+    @keyframes grid-pan { 0% { background-position: 0 0,0 0; } 100% { background-position: 40px 40px,40px 40px; } }
+    @keyframes title-flicker { 0%,92%,100% { opacity: 1; } 93% { opacity: 0.6; } 94% { opacity: 1; } 96% { opacity: 0.75; } 97% { opacity: 1; } }
+    @keyframes card-pulse { 0%,100% { box-shadow: 0 0 16px rgba(0,255,255,0.6),0 0 32px rgba(255,0,255,0.4),inset 0 0 16px rgba(0,255,255,0.1); } 50% { box-shadow: 0 0 24px rgba(0,255,255,0.8),0 0 48px rgba(255,0,255,0.6),inset 0 0 20px rgba(0,255,255,0.15); } }
+
+    .screen { position: relative; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; background: #050a18; overflow: hidden; }
+    .container { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+
+    .title { font-size: 64px; font-weight: 900; letter-spacing: 12px; color: #fff; text-shadow: 0 0 12px #00ffff,0 0 24px #00ffff,0 0 48px #ff00ff; animation: title-flicker 3s infinite alternate; }
+    .subtitle { font-size: 16px; letter-spacing: 8px; color: #7a8cff; text-shadow: 0 0 6px rgba(122,140,255,0.6); }
+    .btn-start { margin-top: 24px; padding: 16px 56px; border-radius: 12px; font-size: 22px; font-weight: 800; letter-spacing: 4px; cursor: pointer; background: linear-gradient(135deg,#1a0033 0%,#0a1530 100%); border: 2px solid #00ffff; color: #00ffff; text-shadow: 0 0 8px rgba(0,255,255,0.8); box-shadow: 0 0 16px rgba(0,255,255,0.4),0 0 32px rgba(255,0,255,0.2); transition: all 0.25s ease; }
+    .btn-start:hover { transform: translateY(-3px); box-shadow: 0 0 24px rgba(0,255,255,0.7),0 0 48px rgba(255,0,255,0.4); border-color: #ff00ff; color: #ff00ff; text-shadow: 0 0 8px rgba(255,0,255,0.8); }
+    .hint { margin-top: 8px; font-size: 13px; color: #4a5a8a; letter-spacing: 1px; }
+
+    .mode-title { font-size: 36px; font-weight: 800; letter-spacing: 4px; color: #fff; text-shadow: 0 0 8px #00ffff,0 0 16px #00ffff,0 0 32px #ff00ff; }
+    .mode-subtitle { font-size: 14px; color: #7a8cff; letter-spacing: 1px; }
+    .mode-cards { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; }
+    .mode-card { position: relative; width: 220px; padding: 28px 20px; border-radius: 16px; background: linear-gradient(135deg,#0a1530 0%,#0d1b3e 100%); border: 2px solid #1a2a55; cursor: pointer; transition: transform 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .mode-card:hover { transform: translateY(-6px); border-color: #3a5aff; box-shadow: 0 8px 24px rgba(58,90,255,0.3); }
+    .mode-card.selected { border-color: #00ffff; animation: card-pulse 1.6s ease-in-out infinite; }
+    .card-icon { font-size: 48px; filter: drop-shadow(0 0 8px rgba(0,255,255,0.5)); }
+    .card-name { font-size: 20px; font-weight: 700; letter-spacing: 2px; color: #e0e6ff; }
+    .mode-card.selected .card-name { color: #00ffff; text-shadow: 0 0 8px rgba(0,255,255,0.8); }
+    .card-desc { font-size: 12px; color: #6a7ab0; text-align: center; line-height: 1.5; }
+    .card-check { position: absolute; top: 12px; right: 16px; font-size: 20px; color: #ff00ff; text-shadow: 0 0 8px #ff00ff; }
+    .action-buttons { display: flex; gap: 20px; margin-top: 8px; }
+    .btn-confirm, .btn-back { padding: 12px 32px; border-radius: 10px; font-size: 16px; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: all 0.2s ease; border: 2px solid; }
+    .btn-confirm { background: linear-gradient(135deg,#1a0033 0%,#0a1530 100%); border-color: #ff00ff; color: #ff00ff; text-shadow: 0 0 6px rgba(255,0,255,0.8); box-shadow: 0 0 12px rgba(255,0,255,0.4); }
+    .btn-confirm:hover { background: linear-gradient(135deg,#2a0044 0%,#1a2550 100%); box-shadow: 0 0 20px rgba(255,0,255,0.7); transform: translateY(-2px); }
+    .btn-confirm.disabled { border-color: #333; color: #555; text-shadow: none; box-shadow: none; cursor: not-allowed; background: #0a0a14; }
+    .btn-back { background: transparent; border-color: #3a5aff; color: #3a5aff; text-shadow: 0 0 4px rgba(58,90,255,0.5); }
+    .btn-back:hover { background: rgba(58,90,255,0.1); box-shadow: 0 0 12px rgba(58,90,255,0.4); }
+
+    .hud { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .scores { display: flex; gap: 20px; }
+    .score-item { display: flex; gap: 8px; align-items: baseline; font-size: 16px; }
+    .score-item .label { color: #7a8cff; }
+    .score-item .value { font-size: 22px; font-weight: 800; }
+    .score-item.p1 .value { color: #9ef01a; text-shadow: 0 0 8px rgba(158,240,26,0.6); }
+    .score-item.p2 .value { color: #3b9eff; text-shadow: 0 0 8px rgba(59,158,255,0.6); }
+    .controls { display: flex; gap: 10px; }
+    .btn-ctrl { padding: 8px 16px; border-radius: 8px; border: 1px solid #3a5aff; background: rgba(10,21,48,0.8); color: #3a5aff; font-size: 14px; cursor: pointer; letter-spacing: 1px; transition: all 0.2s ease; }
+    .btn-ctrl:hover { background: rgba(58,90,255,0.15); box-shadow: 0 0 10px rgba(58,90,255,0.4); }
+    .btn-exit { border-color: #ff00ff; color: #ff00ff; }
+    .btn-exit:hover { background: rgba(255,0,255,0.1); box-shadow: 0 0 10px rgba(255,0,255,0.4); }
+    .game-canvas { background: #071029; border: 4px solid #0b2436; border-radius: 10px; box-shadow: 0 0 16px rgba(0,255,255,0.2),0 0 32px rgba(255,0,255,0.1); }
+    .status-bar { font-size: 14px; color: #00ffff; text-shadow: 0 0 4px rgba(0,255,255,0.5); letter-spacing: 1px; min-height: 20px; }
+    .footer-hint { font-size: 12px; color: #4a5a8a; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    (() => {
+      const app = document.getElementById('app')
+      let route = 'main'
+      let selectedMode = 'single'
+
+      const MODE_ITEMS = [
+        { id: 'single', name: '单人模式', description: '独自操控一条蛇，挑战最高分数', icon: '🐍' },
+        { id: 'double', name: '双人模式', description: '玩家1: WASD · 玩家2: 方向键 · 对战竞速', icon: '⚔️' },
+      ]
+
+      function clearApp() { app.innerHTML = '' }
+
+      function renderMain() {
+        clearApp()
+        app.innerHTML = `<div class="screen"><div class="neon-grid-bg"></div><div class="container" style="gap:20px"><h1 class="title">贪 吃 蛇</h1><p class="subtitle">SNAKE BATTLE</p><button class="btn-start" id="btn-go">开始游戏</button><p class="hint">选择模式后开始你的对战之旅</p></div></div>`
+        document.getElementById('btn-go').addEventListener('click', () => { route = 'modeSelect'; render() })
+      }
+
+      function renderModeSelect() {
+        clearApp()
+        let curMode = 'single'
+        let signalSent = false
+
+        app.innerHTML = `<div class="screen"><div class="neon-grid-bg"></div><div class="container" style="gap:28px;padding:40px"><h1 class="mode-title">选择游戏模式</h1><p class="mode-subtitle">请选择单人或双人模式后点击确认开始</p><div class="mode-cards" id="cards"></div><div class="action-buttons"><button class="btn-back" id="btn-back">返回主界面</button><button class="btn-confirm" id="btn-confirm">确认开始</button></div></div></div>`
+
+        const cardsEl = document.getElementById('cards')
+        const confirmBtn = document.getElementById('btn-confirm')
+        const backBtn = document.getElementById('btn-back')
+
+        function updateCards() {
+          cardsEl.innerHTML = MODE_ITEMS.map(item => `
+            <div class="mode-card ${item.id===curMode?'selected':''}" data-mode="${item.id}">
+              <div class="card-icon">${item.icon}</div>
+              <div class="card-name">${item.name}</div>
+              <div class="card-desc">${item.description}</div>
+              ${item.id===curMode?'<div class="card-check">✦</div>':''}
+            </div>
+          `).join('')
+          cardsEl.querySelectorAll('.mode-card').forEach(card => {
+            card.addEventListener('click', () => {
+              const m = card.dataset.mode
+              if (m === curMode) return
+              curMode = m
+              updateCards()
+            })
+          })
+          confirmBtn.classList.toggle('disabled', !curMode)
+          confirmBtn.disabled = !curMode
+        }
+
+        updateCards()
+
+        confirmBtn.addEventListener('click', () => {
+          if (signalSent) return
+          signalSent = true
+          selectedMode = curMode
+          route = 'game'
+          render()
+        })
+        backBtn.addEventListener('click', () => { route = 'main'; render() })
+      }
+
+      // ===== 游戏引擎 =====
+      const COLS = 24, ROWS = 24, INIT_SPEED = 120, MIN_SPEED = 40, SPEED_STEP = 4
+      const DIR = { LEFT:{x:-1,y:0}, RIGHT:{x:1,y:0}, UP:{x:0,y:-1}, DOWN:{x:0,y:1} }
+      const P1_KEYS_WASD = { w:DIR.UP, W:DIR.UP, a:DIR.LEFT, A:DIR.LEFT, s:DIR.DOWN, S:DIR.DOWN, d:DIR.RIGHT, D:DIR.RIGHT }
+      const P1_KEYS_FULL = Object.assign({}, P1_KEYS_WASD, { ArrowUp:DIR.UP, ArrowLeft:DIR.LEFT, ArrowDown:DIR.DOWN, ArrowRight:DIR.RIGHT })
+      const P2_KEYS = { ArrowUp:DIR.UP, ArrowLeft:DIR.LEFT, ArrowDown:DIR.DOWN, ArrowRight:DIR.RIGHT }
+
+      function isOpposite(a, b) { return a.x + b.x === 0 && a.y + b.y === 0 }
+
+      let gameCleanup = null
+
+      function renderGame() {
+        clearApp()
+        const mode = selectedMode
+        const isSingle = mode === 'single'
+
+        app.innerHTML = `<div class="screen"><div class="neon-grid-bg"></div><div class="container" style="gap:16px;padding:20px"><div class="hud"><div class="scores"><div class="score-item p1"><span class="label">${isSingle?'得分':'玩家1'}</span><span class="value" id="score1">0</span></div>${isSingle?'':'<div class="score-item p2"><span class="label">玩家2</span><span class="value" id="score2">0</span></div>'}</div><div class="controls"><button class="btn-ctrl" id="btn-start">开始/暂停</button><button class="btn-ctrl" id="btn-restart">重新开始</button><button class="btn-ctrl btn-exit" id="btn-exit">返回</button></div></div><div style="display:flex;flex-direction:column;align-items:center;gap:10px"><canvas id="game-canvas" class="game-canvas" width="480" height="480"></canvas><div class="status-bar" id="status">按键开始</div></div><div class="footer-hint">${isSingle?'WASD 或方向键控制 · 空格重新开始':'玩家1: WASD · 玩家2: 方向键 · 空格重新开始'}</div></div></div>`
+
+        const canvas = document.getElementById('game-canvas')
+        const ctx = canvas.getContext('2d')
+        const cellW = canvas.width / COLS, cellH = canvas.height / ROWS
+        const scoreEl1 = document.getElementById('score1')
+        const scoreEl2 = document.getElementById('score2')
+        const statusEl = document.getElementById('status')
+        const btnStart = document.getElementById('btn-start')
+        const btnRestart = document.getElementById('btn-restart')
+        const btnExit = document.getElementById('btn-exit')
+
+        let players, food, totalEaten, speed, running, gameState, timerId
+
+        function roundRectFill(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fill() }
+
+        function occupiedCells() { const cells = []; for (const p of players) for (const c of p.snake) cells.push({x:c.x,y:c.y}); return cells }
+        function spawnFood() { const occupied = occupiedCells(); const free = []; for (let y=0;y<ROWS;y++) for (let x=0;x<COLS;x++) if (!occupied.some(c=>c.x===x&&c.y===y)) free.push({x,y}); if (free.length===0) { food=null; return false } food = free[Math.floor(Math.random()*free.length)]; return true }
+
+        function reset() {
+          players = [{ id:'玩家1', snake:[{x:6,y:11},{x:5,y:11},{x:4,y:11}], dir:DIR.RIGHT, nextDir:DIR.RIGHT, score:0, alive:true, colorHead:'#9ef01a', colorBody:'green' }]
+          if (!isSingle) players.push({ id:'玩家2', snake:[{x:17,y:12},{x:18,y:12},{x:19,y:12}], dir:DIR.LEFT, nextDir:DIR.LEFT, score:0, alive:true, colorHead:'#3b9eff', colorBody:'blue' })
+          food = null; totalEaten = 0; speed = INIT_SPEED; running = false; gameState = '待开始'
+          spawnFood(); updateHUD(); draw(); showStatus(isSingle?'单人模式 · WASD 或方向键控制 · 按键开始':'玩家1: WASD · 玩家2: 方向键 · 按键开始')
+        }
+
+        function start() {
+          if (gameState === '游戏结束') return
+          if (running) { running = false; gameState = '已暂停'; clearInterval(timerId); showStatus('已暂停') }
+          else { running = true; gameState = '进行中'; timerId = setInterval(tick, speed); showStatus('进行中') }
+        }
+
+        function updateHUD() { if (scoreEl1) scoreEl1.textContent = players[0].score; if (scoreEl2 && players[1]) scoreEl2.textContent = players[1].score }
+        function showStatus(t) { statusEl.textContent = t }
+
+        function computeHeads() { for (const p of players) { if (p.alive) { p.dir = p.nextDir; p._newHead = {x:p.snake[0].x+p.dir.x,y:p.snake[0].y+p.dir.y} } else p._newHead = null } }
+        function resolveCollisions() {
+          if (!isSingle) { const h1=players[0]._newHead, h2=players[1]._newHead; if (h1&&h2&&h1.x===h2.x&&h1.y===h2.y) { players[0].alive=false; players[1].alive=false; return } }
+          for (let i=0;i<players.length;i++) { const p=players[i], head=p._newHead; if (!head) continue; if (head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS) { p.alive=false; continue } const body=p.snake.slice(0,-1); if (body.some(c=>c.x===head.x&&c.y===head.y)) { p.alive=false; continue } if (!isSingle) { const other=players[1-i]; if (other.snake.some(c=>c.x===head.x&&c.y===head.y)) { p.alive=false; continue } } }
+        }
+        function applyMoves() {
+          let ate = false
+          for (const p of players) { if (!p.alive) continue; if (p._newHead) p.snake.unshift(p._newHead); if (food && p._newHead && p._newHead.x===food.x && p._newHead.y===food.y) { p.score++; totalEaten++; ate = true } else p.snake.pop() }
+          if (ate) { speed = Math.max(MIN_SPEED, INIT_SPEED - totalEaten*SPEED_STEP); if (!spawnFood()) for (const p of players) p.alive=false; clearInterval(timerId); timerId = setInterval(tick, speed); updateHUD() }
+        }
+        function tick() { computeHeads(); resolveCollisions(); applyMoves(); draw(); if (players.every(p=>!p.alive)) judgeGameOver() }
+        function judgeGameOver() {
+          running = false; clearInterval(timerId); gameState = '游戏结束'
+          if (isSingle) { showStatus('游戏结束 · 得分: ' + players[0].score + ' · 按 空格 重新开始') }
+          else { const s1=players[0].score, s2=players[1].score; let text; if (players[0].alive&&!players[1].alive) text='玩家1 胜出 · 玩家1: '+s1+' · 玩家2: '+s2; else if (!players[0].alive&&players[1].alive) text='玩家2 胜出 · 玩家1: '+s1+' · 玩家2: '+s2; else { if (s1>s2) text='玩家1 胜出 · 玩家1: '+s1+' · 玩家2: '+s2; else if (s1<s2) text='玩家2 胜出 · 玩家1: '+s1+' · 玩家2: '+s2; else text='平局 · 双方: '+s1 } showStatus(text + ' · 按 空格 重新开始') }
+        }
+
+        function draw() {
+          ctx.clearRect(0,0,canvas.width,canvas.height)
+          for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) { ctx.fillStyle=(r+c)%2===0?'#07172a':'#061226'; ctx.fillRect(c*cellW,r*cellH,cellW,cellH) }
+          if (food) { ctx.fillStyle='#ff3b3b'; ctx.shadowColor='#ff3b3b'; ctx.shadowBlur=8; roundRectFill(food.x*cellW+cellW*0.12,food.y*cellH+cellH*0.12,cellW*0.76,cellH*0.76,6); ctx.shadowBlur=0 }
+          for (const p of players) { const snake=p.snake; for (let i=snake.length-1;i>=0;i--) { const s=snake[i]; if (i===0) { ctx.fillStyle=p.colorHead; ctx.shadowColor=p.colorHead; ctx.shadowBlur=6; roundRectFill(s.x*cellW+2,s.y*cellH+2,cellW-4,cellH-4,6); ctx.shadowBlur=0 } else { const t=1-i/snake.length; if (p.colorBody==='green') ctx.fillStyle='rgba('+Math.floor(4+t*80)+','+Math.floor(140+t*80)+','+Math.floor(20+t*40)+',1)'; else ctx.fillStyle='rgba('+Math.floor(4+t*80)+','+Math.floor(80+t*80)+','+Math.floor(200+t*55)+',1)'; roundRectFill(s.x*cellW+4,s.y*cellH+4,cellW-8,cellH-8,5) } } }
+        }
+
+        function trySetDir(player, d) { if (!d) return; if (gameState==='游戏结束') return; if (isOpposite(d,player.dir)) return; player.nextDir=d; if (!running) start() }
+        function handleKeyDown(e) {
+          const key = e.key
+          const p1Keys = isSingle ? P1_KEYS_FULL : P1_KEYS_WASD
+          if (p1Keys[key]) { if (key.startsWith('Arrow')) e.preventDefault(); trySetDir(players[0], p1Keys[key]) }
+          if (!isSingle && P2_KEYS[key]) { e.preventDefault(); trySetDir(players[1], P2_KEYS[key]) }
+          if (key===' ') { e.preventDefault(); reset(); start() }
+          if (key==='Enter') start()
+        }
+
+        btnStart.addEventListener('click', start)
+        btnRestart.addEventListener('click', () => { reset(); start() })
+        btnExit.addEventListener('click', () => { if (gameCleanup) gameCleanup(); route = 'main'; render() })
+        window.addEventListener('keydown', handleKeyDown)
+
+        gameCleanup = () => { clearInterval(timerId); window.removeEventListener('keydown', handleKeyDown); gameCleanup = null }
+        reset()
+      }
+
+      function render() {
+        if (gameCleanup) { gameCleanup() }
+        if (route === 'main') renderMain()
+        else if (route === 'modeSelect') renderModeSelect()
+        else if (route === 'game') renderGame()
+      }
+
+      render()
+    })()
+  </script>
+</body>
+</html>
