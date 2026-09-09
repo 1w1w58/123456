@@ -18,50 +18,73 @@
     .msg{color:#022233;font-size:16px;text-align:center}
     .touch-controls{display:none;gap:6px;margin-top:8px}
     .touch-controls button{width:56px;height:56px;border-radius:8px;font-weight:bold}
-    .naming-panel{display:none;flex-direction:column;align-items:center;gap:12px;padding:18px 24px;background:#fff;border:1px solid #cfe3f5;border-radius:10px;box-shadow:0 4px 14px rgba(30,80,140,0.14)}
-    .naming-panel.show{display:flex}
-    .naming-title{font-size:16px;color:#03314b;font-weight:bold}
-    .naming-row{display:flex;align-items:center;gap:10px}
-    .naming-label{font-size:14px;font-weight:bold;width:52px;text-align:right}
-    .naming-label.p1{color:#4a8c1a}
-    .naming-label.p2{color:#1a5ac8}
-    .name-input{padding:7px 10px;border-radius:6px;border:2px solid #ccc;font-size:14px;width:170px;outline:none;background:#fff}
-    .p1-input{border-color:#9ef01a}
-    .p1-input:focus{border-color:#4a8c1a;box-shadow:0 0 0 2px rgba(158,240,26,0.25)}
-    .p2-input{border-color:#3b9eff}
-    .p2-input:focus{border-color:#1a5ac8;box-shadow:0 0 0 2px rgba(59,158,255,0.25)}
-    .btn-confirm{padding:8px 22px;border-radius:6px;border:1px solid #1a5ac8;background:#3b9eff;color:#fff;font-weight:bold;cursor:pointer;margin-top:2px}
-    .btn-confirm:hover{background:#1a5ac8}
     @media (max-width:520px){
       .touch-controls{display:flex;flex-wrap:wrap;justify-content:center}
       canvas{width:320px;height:320px}
-      .naming-panel{padding:14px 16px}
-      .name-input{width:140px}
+    }
+
+    /* ===== 皮肤颜色选择界面（赛博朋克风格） ===== */
+    .skin-selection{
+      position:fixed;inset:0;z-index:100;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+      background:#0b2436;color:#cfe8ff;
+      font-family:Segoe UI,Roboto,Arial;padding:16px;box-sizing:border-box;
+    }
+    .skin-selection[hidden]{display:none}
+    .skin-title{font-size:26px;font-weight:bold;color:#3b9eff;text-shadow:0 0 14px #3b9eff;letter-spacing:2px}
+    .skin-sub{font-size:13px;color:#6b8aa8;margin-top:-10px}
+    .skin-players{display:flex;gap:36px;flex-wrap:wrap;justify-content:center}
+    .skin-player{display:flex;flex-direction:column;align-items:center;gap:10px}
+    .skin-player-name{font-size:15px;font-weight:bold;letter-spacing:1px}
+    .skin-player[data-player="0"] .skin-player-name{color:#9ef01a;text-shadow:0 0 8px #9ef01a}
+    .skin-player[data-player="1"] .skin-player-name{color:#3b9eff;text-shadow:0 0 8px #3b9eff}
+    .skin-items{display:flex;gap:10px}
+    .skin-item{
+      width:66px;height:74px;border-radius:12px;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+      border:2px solid #1a3a5a;background:#07172a;position:relative;overflow:hidden;
+      transition:transform .12s ease, box-shadow .12s ease;
+    }
+    .skin-item::before{
+      content:"";position:absolute;inset:0;
+      background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(59,158,255,.05) 3px 4px);
+      pointer-events:none;
+    }
+    .skin-item .swatch{width:38px;height:38px;border-radius:9px;box-shadow:0 0 10px currentColor;position:relative;z-index:1}
+    .skin-item .label{font-size:11px;color:#cfe8ff;position:relative;z-index:1}
+    .skin-item:hover{transform:translateY(-2px)}
+    .skin-item.selected-p1{border-color:#9ef01a;box-shadow:0 0 16px #9ef01a,inset 0 0 10px rgba(158,240,26,.25);animation:skin-flow-p1 1.6s linear infinite}
+    .skin-item.selected-p2{border-color:#3b9eff;box-shadow:0 0 16px #3b9eff,inset 0 0 10px rgba(59,158,255,.25);animation:skin-flow-p2 1.6s linear infinite}
+    .skin-item.selected-p1.selected-p2{border-color:#a24bff;box-shadow:0 0 18px #a24bff,inset 0 0 10px rgba(162,75,255,.3)}
+    @keyframes skin-flow-p1{0%,100%{box-shadow:0 0 16px #9ef01a,inset 0 0 10px rgba(158,240,26,.25)}50%{box-shadow:0 0 26px #9ef01a,inset 0 0 14px rgba(158,240,26,.4)}}
+    @keyframes skin-flow-p2{0%,100%{box-shadow:0 0 16px #3b9eff,inset 0 0 10px rgba(59,158,255,.25)}50%{box-shadow:0 0 26px #3b9eff,inset 0 0 14px rgba(59,158,255,.4)}}
+    .skin-preview{margin-top:2px}
+    .skin-preview canvas{border:2px solid #1a3a5a;background:#07172a;border-radius:8px}
+    .skin-tip{min-height:22px;color:#ffe14d;font-size:14px;text-shadow:0 0 6px rgba(255,225,77,.6)}
+    .skin-actions{display:flex;gap:14px}
+    #skin-confirm{background:#a24bff;color:#fff;border:1px solid #a24bff;box-shadow:0 0 12px #a24bff;font-weight:bold;animation:skin-blink 2.2s infinite}
+    #skin-confirm:hover{box-shadow:0 0 22px #ff5fbf}
+    #skin-back{background:transparent;color:#6b8aa8;border:1px solid #2a4a6a}
+    #skin-back:hover{color:#cfe8ff;border-color:#3b9eff}
+    @keyframes skin-blink{0%,100%{box-shadow:0 0 12px #a24bff}50%{box-shadow:0 0 20px #ff5fbf}}
+    @media (max-width:520px){
+      .skin-selection{gap:12px}
+      .skin-players{flex-direction:column;gap:18px}
+      .skin-item{width:56px;height:64px}
+      .skin-item .swatch{width:30px;height:30px}
+      .skin-title{font-size:20px}
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="hud">
-      <div class="score"><span id="name1" class="p1">玩家1</span>: <span id="score1" class="p1">0</span></div>
-      <div class="score"><span id="name2" class="p2">玩家2</span>: <span id="score2" class="p2">0</span></div>
+      <div class="score">玩家1: <span id="score1" class="p1">0</span></div>
+      <div class="score">玩家2: <span id="score2" class="p2">0</span></div>
       <div class="controls">
         <button id="btn-start">开始/暂停</button>
         <button id="btn-restart">重新开始</button>
       </div>
-    </div>
-
-    <div class="naming-panel" id="naming-panel">
-      <div class="naming-title">为你的角色取名</div>
-      <div class="naming-row">
-        <label class="naming-label p1" for="name-input-1">玩家1</label>
-        <input type="text" id="name-input-1" class="name-input p1-input" maxlength="8" placeholder="留空则显示玩家1" />
-      </div>
-      <div class="naming-row">
-        <label class="naming-label p2" for="name-input-2">玩家2</label>
-        <input type="text" id="name-input-2" class="name-input p2-input" maxlength="8" placeholder="留空则显示玩家2" />
-      </div>
-      <button id="btn-confirm-names" class="btn-confirm">开始对战</button>
     </div>
 
     <div class="overlay">
@@ -77,6 +100,29 @@
     <div style="font-size:12px;color:#4b6b80">空格重新开始 · 回车开始/暂停 · 双人模式推荐桌面端键盘对战</div>
   </div>
 
+  <div id="skin-selection" class="skin-selection" hidden>
+    <div class="skin-title">选择皮肤颜色</div>
+    <div class="skin-sub">玩家1: A/D 切换 · 玩家2: ←/→ 切换 · Enter 确认 · Esc 返回</div>
+    <div class="skin-players">
+      <div class="skin-player" data-player="0">
+        <div class="skin-player-name">玩家1</div>
+        <div class="skin-items" id="skin-items-0"></div>
+      </div>
+      <div class="skin-player" data-player="1">
+        <div class="skin-player-name">玩家2</div>
+        <div class="skin-items" id="skin-items-1"></div>
+      </div>
+    </div>
+    <div class="skin-preview">
+      <canvas id="skin-preview-canvas" width="260" height="64"></canvas>
+    </div>
+    <div class="skin-tip" id="skin-tip"></div>
+    <div class="skin-actions">
+      <button id="skin-confirm">确认 / 开始对战</button>
+      <button id="skin-back">返回</button>
+    </div>
+  </div>
+
 <script>
 (() => {
   // ===== 常量层 =====
@@ -85,6 +131,9 @@
   const INIT_SPEED = 120;
   const MIN_SPEED = 40;
   const SPEED_STEP = 4;
+  const DEFAULT_SKIN_ID = 'green';
+  const CONFIRM_DEBOUNCE_MS = 300;
+  const TIP_AUTO_CLEAR_MS = 3000;
   const DIR = {
     LEFT: {x:-1,y:0},
     RIGHT: {x:1,y:0},
@@ -99,31 +148,60 @@
     'ArrowUp':DIR.UP,'ArrowLeft':DIR.LEFT,
     'ArrowDown':DIR.DOWN,'ArrowRight':DIR.RIGHT
   };
-  const MAX_NAME_LENGTH = 8;
-  const DEFAULT_NAMES = { '玩家1': '玩家1', '玩家2': '玩家2' };
-  const CONTROL_CHAR_REGEX = /[\x00-\x1f\x7f]/g;
+
+  // ===== 颜色配置模块（SkinConfig） =====
+  const SkinConfig = (() => {
+    const skins = [
+      {
+        id: 'blue', name: '蓝色', headColor: '#3b9eff', sampleColor: '#3b9eff',
+        bodyGradient: (t) => `rgba(${Math.floor(4+t*80)},${Math.floor(80+t*80)},${Math.floor(200+t*55)},1)`
+      },
+      {
+        id: 'pink', name: '粉色', headColor: '#ff5fbf', sampleColor: '#ff5fbf',
+        bodyGradient: (t) => `rgba(${Math.floor(120+t*135)},${Math.floor(40+t*55)},${Math.floor(100+t*91)},1)`
+      },
+      {
+        id: 'green', name: '绿色', headColor: '#9ef01a', sampleColor: '#9ef01a',
+        bodyGradient: (t) => `rgba(${Math.floor(4+t*80)},${Math.floor(140+t*80)},${Math.floor(20+t*40)},1)`
+      },
+      {
+        id: 'yellow', name: '黄色', headColor: '#ffe14d', sampleColor: '#ffe14d',
+        bodyGradient: (t) => `rgba(${Math.floor(90+t*165)},${Math.floor(80+t*145)},${Math.floor(20+t*57)},1)`
+      },
+      {
+        id: 'purple', name: '紫色', headColor: '#a24bff', sampleColor: '#a24bff',
+        bodyGradient: (t) => `rgba(${Math.floor(60+t*102)},${Math.floor(20+t*55)},${Math.floor(120+t*135)},1)`
+      },
+    ];
+    const fallback = skins.map(s => ({ id:s.id, name:s.name, headColor:s.headColor, sampleColor:s.sampleColor, bodyGradient:s.bodyGradient }));
+
+    function getSkinSet() {
+      if (!skins || skins.length !== 5) return fallback;
+      return skins;
+    }
+    function getSkin(id) {
+      return skins.find(s => s.id === id) || null;
+    }
+    function getDefaultSkinId() {
+      return DEFAULT_SKIN_ID;
+    }
+    return { getSkinSet, getSkin, getDefaultSkinId };
+  })();
 
   // ===== DOM 引用 =====
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
-  const name1El = document.getElementById('name1');
-  const name2El = document.getElementById('name2');
   const scoreEl1 = document.getElementById('score1');
   const scoreEl2 = document.getElementById('score2');
   const statusEl = document.getElementById('status');
   const btnStart = document.getElementById('btn-start');
   const btnRestart = document.getElementById('btn-restart');
-  const namingPanel = document.getElementById('naming-panel');
-  const nameInput1 = document.getElementById('name-input-1');
-  const nameInput2 = document.getElementById('name-input-2');
-  const btnConfirmNames = document.getElementById('btn-confirm-names');
   const touch = document.getElementById('touch');
   const cellW = canvas.width / COLS;
   const cellH = canvas.height / ROWS;
 
   // ===== 状态层 =====
   let players, food, totalEaten, speed, running, gameState, timerId;
-  let lastConfirmedNames = null;
 
   // ===== 工具层 =====
   function isOpposite(a, b) {
@@ -149,113 +227,13 @@
     ctx.fill();
   }
 
-  // ===== 命名层 =====
-  // 名称校验器（纯函数）
-  const NameValidator = {
-    validate(raw, playerId) {
-      let value = raw == null ? '' : String(raw);
-      value = this.trim(value);
-      value = this.filterControl(value);
-      value = this.truncate(value);
-      if (this.needFallback(value)) {
-        return { name: DEFAULT_NAMES[playerId], fellBackToDefault: true, reason: '名称无效，已使用默认名称' };
-      }
-      return { name: value, fellBackToDefault: false, reason: null };
-    },
-    trim(value) {
-      return value.trim();
-    },
-    filterControl(value) {
-      return value.replace(CONTROL_CHAR_REGEX, '');
-    },
-    truncate(value) {
-      return value.slice(0, MAX_NAME_LENGTH);
-    },
-    needFallback(value) {
-      if (value.length === 0) return true;
-      if (value === '0') return true;
-      const meaningfulRegex = /[a-zA-Z0-9\u4e00-\u9fff]/;
-      return !meaningfulRegex.test(value);
-    }
-  };
-
-  // 名称输入界面
-  const NamingPanel = {
-    show(prefill) {
-      if (prefill && prefill.p1 != null && prefill.p1 !== '') {
-        nameInput1.value = prefill.p1;
-      } else {
-        nameInput1.value = '';
-      }
-      if (prefill && prefill.p2 != null && prefill.p2 !== '') {
-        nameInput2.value = prefill.p2;
-      } else {
-        nameInput2.value = '';
-      }
-      namingPanel.classList.add('show');
-    },
-    hide() {
-      namingPanel.classList.remove('show');
-      nameInput1.blur();
-      nameInput2.blur();
-    },
-    getRawInputs() {
-      return { p1: nameInput1.value, p2: nameInput2.value };
-    }
-  };
-
-  // 名称沿用管理（纯内存，不持久化）
-  const NamePersistence = {
-    save(names) {
-      lastConfirmedNames = { p1: names.p1, p2: names.p2 };
-    },
-    load() {
-      return lastConfirmedNames;
-    }
-  };
-
-  function confirmNames(raw1, raw2) {
-    const r1 = NameValidator.validate(raw1, players[0].id);
-    const r2 = NameValidator.validate(raw2, players[1].id);
-    players[0].name = r1.name;
-    players[0].rawInput = raw1;
-    players[0].confirmed = true;
-    players[1].name = r2.name;
-    players[1].rawInput = raw2;
-    players[1].confirmed = true;
-    return { p1: r1, p2: r2 };
-  }
-
-  function applyNamesToHUD() {
-    name1El.textContent = players[0].name;
-    name2El.textContent = players[1].name;
-  }
-
-  function confirmNamesAndStart() {
-    if (gameState !== '待开始') return;
-    const raw = NamingPanel.getRawInputs();
-    const result = confirmNames(raw.p1, raw.p2);
-    const fellBack = result.p1.fellBackToDefault || result.p2.fellBackToDefault;
-    NamingPanel.hide();
-    applyNamesToHUD();
-    start();
-    if (fellBack) {
-      showStatus('名称无效，已使用默认名称 · 进行中');
-    }
-  }
-
-  function filterNameInput(input) {
-    let value = input.value;
-    value = value.replace(CONTROL_CHAR_REGEX, '');
-    value = value.slice(0, MAX_NAME_LENGTH);
-    if (value !== input.value) {
-      input.value = value;
-    }
-  }
-
   // ===== 游戏逻辑层 =====
-  function buildPlayers() {
-    return [
+  function reset(skinMap) {
+    const s1Id = (skinMap && skinMap['玩家1']) || SkinConfig.getDefaultSkinId();
+    const s2Id = (skinMap && skinMap['玩家2']) || 'blue';
+    const s1 = SkinConfig.getSkin(s1Id) || SkinConfig.getSkin(SkinConfig.getDefaultSkinId());
+    const s2 = SkinConfig.getSkin(s2Id) || SkinConfig.getSkin('blue');
+    players = [
       {
         id: '玩家1',
         snake: [{x:6,y:11},{x:5,y:11},{x:4,y:11}],
@@ -263,11 +241,9 @@
         nextDir: DIR.RIGHT,
         score: 0,
         alive: true,
-        colorHead: '#9ef01a',
-        colorBody: 'green',
-        name: '玩家1',
-        rawInput: '',
-        confirmed: false,
+        skinId: s1.id,
+        colorHead: s1.headColor,
+        colorBody: s1.id,
       },
       {
         id: '玩家2',
@@ -276,17 +252,11 @@
         nextDir: DIR.LEFT,
         score: 0,
         alive: true,
-        colorHead: '#3b9eff',
-        colorBody: 'blue',
-        name: '玩家2',
-        rawInput: '',
-        confirmed: false,
+        skinId: s2.id,
+        colorHead: s2.headColor,
+        colorBody: s2.id,
       },
     ];
-  }
-
-  function resetGameState() {
-    players = buildPlayers();
     food = null;
     totalEaten = 0;
     speed = INIT_SPEED;
@@ -295,21 +265,9 @@
     spawnFood();
     updateHUD();
     draw();
+    showStatus('玩家1: WASD · 玩家2: 方向键 · 按键开始');
     btnStart.textContent = '开始/暂停';
     clearInterval(timerId);
-  }
-
-  function showNamingPanel(prefill) {
-    NamingPanel.show(prefill);
-    showStatus('请为角色取名后点击开始对战');
-  }
-
-  function restartGame() {
-    if (players && players[0] && players[0].confirmed) {
-      NamePersistence.save({ p1: players[0].name, p2: players[1].name });
-    }
-    resetGameState();
-    showNamingPanel(NamePersistence.load());
   }
 
   function start() {
@@ -429,23 +387,20 @@
     running = false;
     clearInterval(timerId);
     gameState = '游戏结束';
-    NamePersistence.save({ p1: players[0].name, p2: players[1].name });
     let text;
     const s1 = players[0].score;
     const s2 = players[1].score;
-    const n1 = players[0].name;
-    const n2 = players[1].name;
     if (players[0].alive && !players[1].alive) {
-      text = n1 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
+      text = '玩家1 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
     } else if (!players[0].alive && players[1].alive) {
-      text = n2 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
+      text = '玩家2 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
     } else {
       if (s1 > s2) {
-        text = n1 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
+        text = '玩家1 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
       } else if (s1 < s2) {
-        text = n2 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
+        text = '玩家2 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
       } else {
-        text = '平局 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
+        text = '平局 · 双方: ' + s1;
       }
     }
     showStatus(text + ' · 按 空格 或 点击 重新开始');
@@ -456,7 +411,6 @@
   function updateHUD() {
     scoreEl1.textContent = players[0].score;
     scoreEl2.textContent = players[1].score;
-    applyNamesToHUD();
   }
 
   function showStatus(text) {
@@ -488,6 +442,7 @@
 
   function drawSnake(player) {
     const snake = player.snake;
+    const skin = SkinConfig.getSkin(player.skinId) || SkinConfig.getSkin(SkinConfig.getDefaultSkinId());
     for (let i=snake.length-1; i>=0; i--) {
       const p = snake[i];
       if (i === 0) {
@@ -495,15 +450,292 @@
         roundRectFill(p.x*cellW+2, p.y*cellH+2, cellW-4, cellH-4, 6);
       } else {
         const t = 1 - i/snake.length;
-        if (player.colorBody === 'green') {
-          ctx.fillStyle = `rgba(${Math.floor(4+t*80)},${Math.floor(140+t*80)},${Math.floor(20+t*40)},1)`;
-        } else {
-          ctx.fillStyle = `rgba(${Math.floor(4+t*80)},${Math.floor(80+t*80)},${Math.floor(200+t*55)},1)`;
-        }
+        ctx.fillStyle = skin.bodyGradient(t);
         roundRectFill(p.x*cellW+4, p.y*cellH+4, cellW-8, cellH-8, 5);
       }
     }
   }
+
+  // ===== 颜色选择界面模块（SelectionUI） =====
+  const SelectionUI = (() => {
+    const root = document.getElementById('skin-selection');
+    const itemsContainers = [document.getElementById('skin-items-0'), document.getElementById('skin-items-1')];
+    const tipEl = document.getElementById('skin-tip');
+    const confirmBtn = document.getElementById('skin-confirm');
+    const backBtn = document.getElementById('skin-back');
+    const previewCanvas = document.getElementById('skin-preview-canvas');
+    const pctx = previewCanvas.getContext('2d');
+    let rafId = null;
+    let currentSession = null;
+    let itemEls = [[], []];
+    let tipTimer = null;
+
+    function roundRectFillPreview(x, y, w, h, r) {
+      pctx.beginPath();
+      pctx.moveTo(x+r, y);
+      pctx.arcTo(x+w, y, x+w, y+h, r);
+      pctx.arcTo(x+w, y+h, x, y+h, r);
+      pctx.arcTo(x, y+h, x, y, r);
+      pctx.arcTo(x, y, x+w, y, r);
+      pctx.closePath();
+      pctx.fill();
+    }
+
+    function renderSelection(session) {
+      currentSession = session;
+      root.hidden = false;
+      const skinSet = SkinConfig.getSkinSet();
+      for (let pi = 0; pi < 2; pi++) {
+        const container = itemsContainers[pi];
+        container.innerHTML = '';
+        itemEls[pi] = [];
+        skinSet.forEach((skin, idx) => {
+          const item = document.createElement('div');
+          item.className = 'skin-item';
+          item.dataset.player = pi;
+          item.dataset.idx = idx;
+          item.dataset.skinId = skin.id;
+          const swatch = document.createElement('div');
+          swatch.className = 'swatch';
+          swatch.style.background = skin.sampleColor;
+          swatch.style.color = skin.sampleColor;
+          const label = document.createElement('div');
+          label.className = 'label';
+          label.textContent = skin.name;
+          item.appendChild(swatch);
+          item.appendChild(label);
+          container.appendChild(item);
+          itemEls[pi].push(item);
+        });
+      }
+      updateHighlight(session);
+      startPreview();
+    }
+
+    function updateHighlight(session) {
+      const skinSet = SkinConfig.getSkinSet();
+      for (let pi = 0; pi < 2; pi++) {
+        const sel = session.players[pi].selectedSkinId;
+        skinSet.forEach((skin, idx) => {
+          const el = itemEls[pi][idx];
+          if (!el) return;
+          el.classList.toggle('selected-p1', pi === 0 && skin.id === sel);
+          el.classList.toggle('selected-p2', pi === 1 && skin.id === sel);
+        });
+      }
+    }
+
+    function startPreview() {
+      if (rafId) cancelAnimationFrame(rafId);
+      const loop = () => {
+        drawPreview();
+        rafId = requestAnimationFrame(loop);
+      };
+      loop();
+    }
+
+    function drawPreview() {
+      if (!currentSession) return;
+      pctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      pctx.fillStyle = '#07172a';
+      pctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+      const segW = 18, segH = 14, gap = 2, segs = 7;
+      for (let pi = 0; pi < 2; pi++) {
+        const sel = currentSession.players[pi].selectedSkinId;
+        const skin = SkinConfig.getSkin(sel) || SkinConfig.getSkin(SkinConfig.getDefaultSkinId());
+        const yBase = pi * (segH + 14) + 10;
+        for (let i = segs - 1; i >= 0; i--) {
+          const x = 12 + i * (segW + gap);
+          if (i === 0) {
+            pctx.fillStyle = skin.headColor;
+          } else {
+            const t = 1 - i / segs;
+            pctx.fillStyle = skin.bodyGradient(t);
+          }
+          roundRectFillPreview(x, yBase, segW, segH, 4);
+        }
+      }
+    }
+
+    function showSelectionTip(text) {
+      tipEl.textContent = text;
+      if (tipTimer) clearTimeout(tipTimer);
+      tipTimer = setTimeout(() => { tipEl.textContent = ''; }, TIP_AUTO_CLEAR_MS);
+    }
+
+    function dispose() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      root.hidden = true;
+      currentSession = null;
+      if (tipTimer) clearTimeout(tipTimer);
+      tipEl.textContent = '';
+    }
+
+    return {
+      renderSelection, updateHighlight, showSelectionTip, dispose,
+      confirmBtn, backBtn, root,
+      getItemEl: (pi, idx) => (itemEls[pi] ? itemEls[pi][idx] : null)
+    };
+  })();
+
+  // ===== 颜色选择状态机模块（SelectionFSM） =====
+  const SelectionFSM = (() => {
+    let state = 'Idle';
+    let session = null;
+    let lastConfirmAt = 0;
+    const lastSelectionMemory = { '玩家1': null, '玩家2': null };
+    let onSubmit = null;
+    let onBack = null;
+
+    function setCallbacks(cb) { onSubmit = cb.onSubmit; onBack = cb.onBack; }
+
+    function enterSelection(ctx) {
+      if (!ctx || !ctx.players || ctx.players.length === 0) {
+        console.warn('[SelectionFSM] invalid ctx, stay Idle');
+        return;
+      }
+      state = 'Showing';
+      const skinSet = SkinConfig.getSkinSet();
+      session = {
+        active: true,
+        mode: ctx.mode || 'double',
+        players: ctx.players.map(pl => ({
+          playerId: pl.id,
+          selectedSkinId: lastSelectionMemory[pl.id] || SkinConfig.getDefaultSkinId(),
+          confirmed: false,
+        })),
+        skinSet,
+        lastConfirmAt: 0,
+      };
+      SelectionUI.renderSelection(session);
+      console.debug('[SelectionFSM] enterSelection', session);
+    }
+
+    function selectColor(playerId, skinId) {
+      if (state !== 'Showing' || !session) return;
+      const pl = session.players.find(p => p.playerId === playerId);
+      if (!pl) return;
+      if (!SkinConfig.getSkin(skinId)) return;
+      pl.selectedSkinId = skinId;
+      SelectionUI.updateHighlight(session);
+      console.debug('[SelectionFSM] selectColor', playerId, skinId);
+    }
+
+    function confirm() {
+      if (state !== 'Showing' || !session) return { ok: false, reason: '状态无效' };
+      const now = Date.now();
+      if (now - lastConfirmAt < CONFIRM_DEBOUNCE_MS) return { ok: false, reason: '去抖中' };
+      lastConfirmAt = now;
+      state = 'Checking';
+      const unselected = session.players.find(p => !p.selectedSkinId);
+      if (unselected) {
+        state = 'Showing';
+        SelectionUI.showSelectionTip('请先选择皮肤颜色');
+        return { ok: false, reason: '请先选择皮肤颜色' };
+      }
+      if (session.mode === 'double' && session.players.length === 2) {
+        if (session.players[0].selectedSkinId === session.players[1].selectedSkinId) {
+          state = 'Showing';
+          SelectionUI.showSelectionTip('双方颜色不能相同');
+          return { ok: false, reason: '双方颜色不能相同' };
+        }
+      }
+      state = 'Submitted';
+      const skinMap = {};
+      session.players.forEach(p => { skinMap[p.playerId] = p.selectedSkinId; });
+      session.players.forEach(p => { lastSelectionMemory[p.playerId] = p.selectedSkinId; });
+      const result = { ok: true, skinMap, mode: session.mode };
+      SelectionUI.dispose();
+      const cb = onSubmit;
+      state = 'Idle';
+      session = null;
+      if (cb) cb(result);
+      return result;
+    }
+
+    function goBack() {
+      if (state !== 'Showing' || !session) return;
+      session.players.forEach(p => { lastSelectionMemory[p.playerId] = p.selectedSkinId; });
+      SelectionUI.dispose();
+      const cb = onBack;
+      state = 'Idle';
+      session = null;
+      if (cb) cb();
+    }
+
+    return {
+      setCallbacks, enterSelection, selectColor, confirm, goBack,
+      isActive: () => state === 'Showing',
+      getSession: () => session
+    };
+  })();
+
+  // ===== 输入适配模块（InputAdapter） =====
+  const InputAdapter = (() => {
+    function init() {
+      SelectionUI.root.addEventListener('click', (e) => {
+        const item = e.target.closest('.skin-item');
+        if (item) {
+          const pi = parseInt(item.dataset.player, 10);
+          const skinId = item.dataset.skinId;
+          SelectionFSM.selectColor('玩家' + (pi + 1), skinId);
+          return;
+        }
+      });
+      SelectionUI.confirmBtn.addEventListener('click', () => { SelectionFSM.confirm(); });
+      SelectionUI.backBtn.addEventListener('click', () => { SelectionFSM.goBack(); });
+    }
+
+    function moveCursor(playerId, delta) {
+      const session = SelectionFSM.getSession();
+      if (!session) return;
+      const pl = session.players.find(p => p.playerId === playerId);
+      if (!pl) return;
+      const skinSet = SkinConfig.getSkinSet();
+      let idx = skinSet.findIndex(s => s.id === pl.selectedSkinId);
+      if (idx < 0) idx = 0;
+      idx = (idx + delta + skinSet.length) % skinSet.length;
+      SelectionFSM.selectColor(playerId, skinSet[idx].id);
+    }
+
+    function handleKeydown(e) {
+      if (!SelectionFSM.isActive()) return false;
+      const key = e.key;
+      if (key === 'a' || key === 'A') { e.preventDefault(); moveCursor('玩家1', -1); return true; }
+      if (key === 'd' || key === 'D') { e.preventDefault(); moveCursor('玩家1', 1); return true; }
+      if (key === 'ArrowLeft') { e.preventDefault(); moveCursor('玩家2', -1); return true; }
+      if (key === 'ArrowRight') { e.preventDefault(); moveCursor('玩家2', 1); return true; }
+      if (key === 'Enter') { e.preventDefault(); SelectionFSM.confirm(); return true; }
+      if (key === 'Escape') { e.preventDefault(); SelectionFSM.goBack(); return true; }
+      if (key === ' ' || key === 'w' || key === 'W' || key === 's' || key === 'S'
+          || key === 'ArrowUp' || key === 'ArrowDown') {
+        e.preventDefault();
+        return true;
+      }
+      return true;
+    }
+
+    return { init, handleKeydown };
+  })();
+
+  // ===== 流程编排衔接模块（FlowBridge） =====
+  const FlowBridge = (() => {
+    const DEFAULT_CTX = { mode: 'double', players: [{ id: '玩家1', name: '玩家1' }, { id: '玩家2', name: '玩家2' }] };
+
+    function init() {
+      SelectionFSM.setCallbacks({
+        onSubmit: (result) => { reset(result.skinMap); start(); },
+        onBack: () => { onPreFlowComplete(DEFAULT_CTX); }
+      });
+    }
+
+    function onPreFlowComplete(ctx) {
+      SelectionFSM.enterSelection(ctx || DEFAULT_CTX);
+    }
+
+    return { init, onPreFlowComplete, DEFAULT_CTX };
+  })();
 
   // ===== 输入分发层 =====
   function trySetDir(player, d) {
@@ -512,18 +744,12 @@
     if (isOpposite(d, player.dir)) return;
     player.nextDir = d;
     if (!running && gameState !== '游戏结束') {
-      if (gameState === '待开始') {
-        confirmNamesAndStart();
-      } else {
-        start();
-      }
+      start();
     }
   }
 
   window.addEventListener('keydown', (e) => {
-    if (e.target === nameInput1 || e.target === nameInput2) {
-      return;
-    }
+    if (InputAdapter.handleKeydown(e)) return;
     const key = e.key;
     if (P1_KEYS[key]) {
       trySetDir(players[0], P1_KEYS[key]);
@@ -534,41 +760,16 @@
     }
     if (key === ' ') {
       e.preventDefault();
-      restartGame();
+      reset();
+      start();
     }
     if (key === 'Enter') {
-      if (gameState === '待开始') {
-        confirmNamesAndStart();
-      } else {
-        start();
-      }
-    }
-  });
-
-  btnStart.addEventListener('click', () => {
-    if (gameState === '待开始') {
-      confirmNamesAndStart();
-    } else {
       start();
     }
   });
-  btnRestart.addEventListener('click', restartGame);
-  btnConfirmNames.addEventListener('click', confirmNamesAndStart);
 
-  nameInput1.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      confirmNamesAndStart();
-    }
-  });
-  nameInput2.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      confirmNamesAndStart();
-    }
-  });
-  nameInput1.addEventListener('input', () => { filterNameInput(nameInput1); });
-  nameInput2.addEventListener('input', () => { filterNameInput(nameInput2); });
+  btnStart.addEventListener('click', start);
+  btnRestart.addEventListener('click', () => { reset(); start(); });
 
   touch.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
@@ -581,8 +782,10 @@
   });
 
   // ===== 初始化 =====
-  resetGameState();
-  showNamingPanel(NamePersistence.load());
+  reset();
+  FlowBridge.init();
+  InputAdapter.init();
+  FlowBridge.onPreFlowComplete(FlowBridge.DEFAULT_CTX);
 
 })();
 </script>
