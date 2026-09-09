@@ -18,21 +18,50 @@
     .msg{color:#022233;font-size:16px;text-align:center}
     .touch-controls{display:none;gap:6px;margin-top:8px}
     .touch-controls button{width:56px;height:56px;border-radius:8px;font-weight:bold}
+    .naming-panel{display:none;flex-direction:column;align-items:center;gap:12px;padding:18px 24px;background:#fff;border:1px solid #cfe3f5;border-radius:10px;box-shadow:0 4px 14px rgba(30,80,140,0.14)}
+    .naming-panel.show{display:flex}
+    .naming-title{font-size:16px;color:#03314b;font-weight:bold}
+    .naming-row{display:flex;align-items:center;gap:10px}
+    .naming-label{font-size:14px;font-weight:bold;width:52px;text-align:right}
+    .naming-label.p1{color:#4a8c1a}
+    .naming-label.p2{color:#1a5ac8}
+    .name-input{padding:7px 10px;border-radius:6px;border:2px solid #ccc;font-size:14px;width:170px;outline:none;background:#fff}
+    .p1-input{border-color:#9ef01a}
+    .p1-input:focus{border-color:#4a8c1a;box-shadow:0 0 0 2px rgba(158,240,26,0.25)}
+    .p2-input{border-color:#3b9eff}
+    .p2-input:focus{border-color:#1a5ac8;box-shadow:0 0 0 2px rgba(59,158,255,0.25)}
+    .btn-confirm{padding:8px 22px;border-radius:6px;border:1px solid #1a5ac8;background:#3b9eff;color:#fff;font-weight:bold;cursor:pointer;margin-top:2px}
+    .btn-confirm:hover{background:#1a5ac8}
     @media (max-width:520px){
       .touch-controls{display:flex;flex-wrap:wrap;justify-content:center}
       canvas{width:320px;height:320px}
+      .naming-panel{padding:14px 16px}
+      .name-input{width:140px}
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="hud">
-      <div class="score">玩家1: <span id="score1" class="p1">0</span></div>
-      <div class="score">玩家2: <span id="score2" class="p2">0</span></div>
+      <div class="score"><span id="name1" class="p1">玩家1</span>: <span id="score1" class="p1">0</span></div>
+      <div class="score"><span id="name2" class="p2">玩家2</span>: <span id="score2" class="p2">0</span></div>
       <div class="controls">
         <button id="btn-start">开始/暂停</button>
         <button id="btn-restart">重新开始</button>
       </div>
+    </div>
+
+    <div class="naming-panel" id="naming-panel">
+      <div class="naming-title">为你的角色取名</div>
+      <div class="naming-row">
+        <label class="naming-label p1" for="name-input-1">玩家1</label>
+        <input type="text" id="name-input-1" class="name-input p1-input" maxlength="8" placeholder="留空则显示玩家1" />
+      </div>
+      <div class="naming-row">
+        <label class="naming-label p2" for="name-input-2">玩家2</label>
+        <input type="text" id="name-input-2" class="name-input p2-input" maxlength="8" placeholder="留空则显示玩家2" />
+      </div>
+      <button id="btn-confirm-names" class="btn-confirm">开始对战</button>
     </div>
 
     <div class="overlay">
@@ -70,21 +99,31 @@
     'ArrowUp':DIR.UP,'ArrowLeft':DIR.LEFT,
     'ArrowDown':DIR.DOWN,'ArrowRight':DIR.RIGHT
   };
+  const MAX_NAME_LENGTH = 8;
+  const DEFAULT_NAMES = { '玩家1': '玩家1', '玩家2': '玩家2' };
+  const CONTROL_CHAR_REGEX = /[\x00-\x1f\x7f]/g;
 
   // ===== DOM 引用 =====
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
+  const name1El = document.getElementById('name1');
+  const name2El = document.getElementById('name2');
   const scoreEl1 = document.getElementById('score1');
   const scoreEl2 = document.getElementById('score2');
   const statusEl = document.getElementById('status');
   const btnStart = document.getElementById('btn-start');
   const btnRestart = document.getElementById('btn-restart');
+  const namingPanel = document.getElementById('naming-panel');
+  const nameInput1 = document.getElementById('name-input-1');
+  const nameInput2 = document.getElementById('name-input-2');
+  const btnConfirmNames = document.getElementById('btn-confirm-names');
   const touch = document.getElementById('touch');
   const cellW = canvas.width / COLS;
   const cellH = canvas.height / ROWS;
 
   // ===== 状态层 =====
   let players, food, totalEaten, speed, running, gameState, timerId;
+  let lastConfirmedNames = null;
 
   // ===== 工具层 =====
   function isOpposite(a, b) {
@@ -110,9 +149,113 @@
     ctx.fill();
   }
 
+  // ===== 命名层 =====
+  // 名称校验器（纯函数）
+  const NameValidator = {
+    validate(raw, playerId) {
+      let value = raw == null ? '' : String(raw);
+      value = this.trim(value);
+      value = this.filterControl(value);
+      value = this.truncate(value);
+      if (this.needFallback(value)) {
+        return { name: DEFAULT_NAMES[playerId], fellBackToDefault: true, reason: '名称无效，已使用默认名称' };
+      }
+      return { name: value, fellBackToDefault: false, reason: null };
+    },
+    trim(value) {
+      return value.trim();
+    },
+    filterControl(value) {
+      return value.replace(CONTROL_CHAR_REGEX, '');
+    },
+    truncate(value) {
+      return value.slice(0, MAX_NAME_LENGTH);
+    },
+    needFallback(value) {
+      if (value.length === 0) return true;
+      if (value === '0') return true;
+      const meaningfulRegex = /[a-zA-Z0-9\u4e00-\u9fff]/;
+      return !meaningfulRegex.test(value);
+    }
+  };
+
+  // 名称输入界面
+  const NamingPanel = {
+    show(prefill) {
+      if (prefill && prefill.p1 != null && prefill.p1 !== '') {
+        nameInput1.value = prefill.p1;
+      } else {
+        nameInput1.value = '';
+      }
+      if (prefill && prefill.p2 != null && prefill.p2 !== '') {
+        nameInput2.value = prefill.p2;
+      } else {
+        nameInput2.value = '';
+      }
+      namingPanel.classList.add('show');
+    },
+    hide() {
+      namingPanel.classList.remove('show');
+      nameInput1.blur();
+      nameInput2.blur();
+    },
+    getRawInputs() {
+      return { p1: nameInput1.value, p2: nameInput2.value };
+    }
+  };
+
+  // 名称沿用管理（纯内存，不持久化）
+  const NamePersistence = {
+    save(names) {
+      lastConfirmedNames = { p1: names.p1, p2: names.p2 };
+    },
+    load() {
+      return lastConfirmedNames;
+    }
+  };
+
+  function confirmNames(raw1, raw2) {
+    const r1 = NameValidator.validate(raw1, players[0].id);
+    const r2 = NameValidator.validate(raw2, players[1].id);
+    players[0].name = r1.name;
+    players[0].rawInput = raw1;
+    players[0].confirmed = true;
+    players[1].name = r2.name;
+    players[1].rawInput = raw2;
+    players[1].confirmed = true;
+    return { p1: r1, p2: r2 };
+  }
+
+  function applyNamesToHUD() {
+    name1El.textContent = players[0].name;
+    name2El.textContent = players[1].name;
+  }
+
+  function confirmNamesAndStart() {
+    if (gameState !== '待开始') return;
+    const raw = NamingPanel.getRawInputs();
+    const result = confirmNames(raw.p1, raw.p2);
+    const fellBack = result.p1.fellBackToDefault || result.p2.fellBackToDefault;
+    NamingPanel.hide();
+    applyNamesToHUD();
+    start();
+    if (fellBack) {
+      showStatus('名称无效，已使用默认名称 · 进行中');
+    }
+  }
+
+  function filterNameInput(input) {
+    let value = input.value;
+    value = value.replace(CONTROL_CHAR_REGEX, '');
+    value = value.slice(0, MAX_NAME_LENGTH);
+    if (value !== input.value) {
+      input.value = value;
+    }
+  }
+
   // ===== 游戏逻辑层 =====
-  function reset() {
-    players = [
+  function buildPlayers() {
+    return [
       {
         id: '玩家1',
         snake: [{x:6,y:11},{x:5,y:11},{x:4,y:11}],
@@ -122,6 +265,9 @@
         alive: true,
         colorHead: '#9ef01a',
         colorBody: 'green',
+        name: '玩家1',
+        rawInput: '',
+        confirmed: false,
       },
       {
         id: '玩家2',
@@ -132,8 +278,15 @@
         alive: true,
         colorHead: '#3b9eff',
         colorBody: 'blue',
+        name: '玩家2',
+        rawInput: '',
+        confirmed: false,
       },
     ];
+  }
+
+  function resetGameState() {
+    players = buildPlayers();
     food = null;
     totalEaten = 0;
     speed = INIT_SPEED;
@@ -142,9 +295,21 @@
     spawnFood();
     updateHUD();
     draw();
-    showStatus('玩家1: WASD · 玩家2: 方向键 · 按键开始');
     btnStart.textContent = '开始/暂停';
     clearInterval(timerId);
+  }
+
+  function showNamingPanel(prefill) {
+    NamingPanel.show(prefill);
+    showStatus('请为角色取名后点击开始对战');
+  }
+
+  function restartGame() {
+    if (players && players[0] && players[0].confirmed) {
+      NamePersistence.save({ p1: players[0].name, p2: players[1].name });
+    }
+    resetGameState();
+    showNamingPanel(NamePersistence.load());
   }
 
   function start() {
@@ -264,20 +429,23 @@
     running = false;
     clearInterval(timerId);
     gameState = '游戏结束';
+    NamePersistence.save({ p1: players[0].name, p2: players[1].name });
     let text;
     const s1 = players[0].score;
     const s2 = players[1].score;
+    const n1 = players[0].name;
+    const n2 = players[1].name;
     if (players[0].alive && !players[1].alive) {
-      text = '玩家1 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
+      text = n1 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
     } else if (!players[0].alive && players[1].alive) {
-      text = '玩家2 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
+      text = n2 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
     } else {
       if (s1 > s2) {
-        text = '玩家1 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
+        text = n1 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
       } else if (s1 < s2) {
-        text = '玩家2 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
+        text = n2 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
       } else {
-        text = '平局 · 双方: ' + s1;
+        text = '平局 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
       }
     }
     showStatus(text + ' · 按 空格 或 点击 重新开始');
@@ -288,6 +456,7 @@
   function updateHUD() {
     scoreEl1.textContent = players[0].score;
     scoreEl2.textContent = players[1].score;
+    applyNamesToHUD();
   }
 
   function showStatus(text) {
@@ -343,11 +512,18 @@
     if (isOpposite(d, player.dir)) return;
     player.nextDir = d;
     if (!running && gameState !== '游戏结束') {
-      start();
+      if (gameState === '待开始') {
+        confirmNamesAndStart();
+      } else {
+        start();
+      }
     }
   }
 
   window.addEventListener('keydown', (e) => {
+    if (e.target === nameInput1 || e.target === nameInput2) {
+      return;
+    }
     const key = e.key;
     if (P1_KEYS[key]) {
       trySetDir(players[0], P1_KEYS[key]);
@@ -358,16 +534,41 @@
     }
     if (key === ' ') {
       e.preventDefault();
-      reset();
-      start();
+      restartGame();
     }
     if (key === 'Enter') {
-      start();
+      if (gameState === '待开始') {
+        confirmNamesAndStart();
+      } else {
+        start();
+      }
     }
   });
 
-  btnStart.addEventListener('click', start);
-  btnRestart.addEventListener('click', () => { reset(); start(); });
+  btnStart.addEventListener('click', () => {
+    if (gameState === '待开始') {
+      confirmNamesAndStart();
+    } else {
+      start();
+    }
+  });
+  btnRestart.addEventListener('click', restartGame);
+  btnConfirmNames.addEventListener('click', confirmNamesAndStart);
+
+  nameInput1.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmNamesAndStart();
+    }
+  });
+  nameInput2.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmNamesAndStart();
+    }
+  });
+  nameInput1.addEventListener('input', () => { filterNameInput(nameInput1); });
+  nameInput2.addEventListener('input', () => { filterNameInput(nameInput2); });
 
   touch.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
@@ -380,7 +581,8 @@
   });
 
   // ===== 初始化 =====
-  reset();
+  resetGameState();
+  showNamingPanel(NamePersistence.load());
 
 })();
 </script>
