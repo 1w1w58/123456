@@ -42,6 +42,17 @@
     .btn-back { background: transparent; border-color: #3a5aff; color: #3a5aff; text-shadow: 0 0 4px rgba(58,90,255,0.5); }
     .btn-back:hover { background: rgba(58,90,255,0.1); box-shadow: 0 0 12px rgba(58,90,255,0.4); }
 
+    .naming-form { display: flex; flex-direction: column; gap: 18px; }
+    .naming-row { display: flex; align-items: center; gap: 14px; }
+    .naming-label { font-size: 16px; font-weight: 700; letter-spacing: 2px; width: 64px; text-align: right; }
+    .naming-label.p1 { color: #9ef01a; text-shadow: 0 0 6px rgba(158,240,26,0.6); }
+    .naming-label.p2 { color: #3b9eff; text-shadow: 0 0 6px rgba(59,158,255,0.6); }
+    .naming-input { padding: 10px 14px; border-radius: 8px; border: 2px solid #1a2a55; background: rgba(10,21,48,0.8); color: #e0e6ff; font-size: 16px; width: 220px; outline: none; transition: all 0.2s ease; }
+    .p1-input { border-color: #9ef01a; }
+    .p1-input:focus { box-shadow: 0 0 12px rgba(158,240,26,0.5); }
+    .p2-input { border-color: #3b9eff; }
+    .p2-input:focus { box-shadow: 0 0 12px rgba(59,158,255,0.5); }
+
     .hud { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; justify-content: center; }
     .scores { display: flex; gap: 20px; }
     .score-item { display: flex; gap: 8px; align-items: baseline; font-size: 16px; }
@@ -57,6 +68,7 @@
     .game-canvas { background: #071029; border: 4px solid #0b2436; border-radius: 10px; box-shadow: 0 0 16px rgba(0,255,255,0.2),0 0 32px rgba(255,0,255,0.1); }
     .status-bar { font-size: 14px; color: #00ffff; text-shadow: 0 0 4px rgba(0,255,255,0.5); letter-spacing: 1px; min-height: 20px; }
     .footer-hint { font-size: 12px; color: #4a5a8a; letter-spacing: 1px; }
+    @media (max-width:520px) { .naming-input { width: 160px; } .naming-label { width: 48px; } }
   </style>
 </head>
 <body>
@@ -66,13 +78,45 @@
       const app = document.getElementById('app')
       let route = 'main'
       let selectedMode = 'single'
+      let confirmedNames = null
+      let lastConfirmedNames = null
+      let pendingNameFallback = false
+      let gameCleanup = null
+      let namingCleanup = null
 
       const MODE_ITEMS = [
         { id: 'single', name: '单人模式', description: '独自操控一条蛇，挑战最高分数', icon: '🐍' },
         { id: 'double', name: '双人模式', description: '玩家1: WASD · 玩家2: 方向键 · 对战竞速', icon: '⚔️' },
       ]
 
+      const MAX_NAME_LENGTH = 8
+      const DEFAULT_NAMES = { '玩家1': '玩家1', '玩家2': '玩家2' }
+      const CONTROL_CHAR_REGEX = /[\x00-\x1f\x7f]/g
+
       function clearApp() { app.innerHTML = '' }
+
+      function escapeAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+      const NameValidator = {
+        validate(raw, playerId) {
+          let value = raw == null ? '' : String(raw)
+          value = value.trim().replace(CONTROL_CHAR_REGEX, '').slice(0, MAX_NAME_LENGTH)
+          if (this.needFallback(value)) {
+            return { name: DEFAULT_NAMES[playerId], fellBackToDefault: true, reason: '名称无效，已使用默认名称' }
+          }
+          return { name: value, fellBackToDefault: false, reason: null }
+        },
+        needFallback(value) {
+          if (value.length === 0) return true
+          if (value === '0') return true
+          return !/[a-zA-Z0-9\u4e00-\u9fff]/.test(value)
+        }
+      }
+
+      const NamePersistence = {
+        save(names) { lastConfirmedNames = { p1: names.p1, p2: names.p2 } },
+        load() { return lastConfirmedNames }
+      }
 
       function renderMain() {
         clearApp()
@@ -118,10 +162,64 @@
           if (signalSent) return
           signalSent = true
           selectedMode = curMode
-          route = 'game'
+          route = 'naming'
           render()
         })
         backBtn.addEventListener('click', () => { route = 'main'; render() })
+      }
+
+      function getRawInputsFromNaming() {
+        const isSingle = selectedMode === 'single'
+        const input1 = document.getElementById('name-input-1')
+        const input2 = document.getElementById('name-input-2')
+        return { p1: input1 ? input1.value : '', p2: (!isSingle && input2) ? input2.value : null }
+      }
+
+      function confirmNamesAndEnterGame(rawInputs) {
+        const isSingle = selectedMode === 'single'
+        const r1 = NameValidator.validate(rawInputs.p1, '玩家1')
+        const r2 = isSingle ? null : NameValidator.validate(rawInputs.p2, '玩家2')
+        confirmedNames = { p1: r1.name, p2: r2 ? r2.name : null }
+        pendingNameFallback = r1.fellBackToDefault || (r2 && r2.fellBackToDefault)
+        route = 'game'
+        render()
+        return { p1: r1, p2: r2 }
+      }
+
+      function renderNaming() {
+        clearApp()
+        const isSingle = selectedMode === 'single'
+        const prefill = lastConfirmedNames
+        const p1Val = (prefill && prefill.p1) ? escapeAttr(prefill.p1) : ''
+        const p2Val = (!isSingle && prefill && prefill.p2) ? escapeAttr(prefill.p2) : ''
+        const p2Html = isSingle ? '' : `<div class="naming-row"><label class="naming-label p2" for="name-input-2">玩家2</label><input type="text" id="name-input-2" class="naming-input p2-input" maxlength="8" placeholder="留空则显示玩家2" value="${p2Val}" /></div>`
+
+        app.innerHTML = `<div class="screen"><div class="neon-grid-bg"></div><div class="container" style="gap:24px;padding:40px"><h1 class="mode-title">为角色取名</h1><p class="mode-subtitle">${isSingle?'为你的蛇取一个名字':'为双方蛇取名字'} · 留空使用默认名称</p><div class="naming-form"><div class="naming-row"><label class="naming-label p1" for="name-input-1">${isSingle?'名称':'玩家1'}</label><input type="text" id="name-input-1" class="naming-input p1-input" maxlength="8" placeholder="留空则显示玩家1" value="${p1Val}" /></div>${p2Html}</div><div class="action-buttons"><button class="btn-back" id="btn-naming-back">返回</button><button class="btn-confirm" id="btn-start-game">开始对战</button></div></div></div>`
+
+        const input1 = document.getElementById('name-input-1')
+        const input2 = document.getElementById('name-input-2')
+        const btnStartGame = document.getElementById('btn-start-game')
+        const btnBack = document.getElementById('btn-naming-back')
+
+        if (input1) input1.focus()
+
+        function filterInput(input) {
+          if (!input) return
+          const value = input.value.replace(CONTROL_CHAR_REGEX, '').slice(0, MAX_NAME_LENGTH)
+          if (value !== input.value) input.value = value
+        }
+        if (input1) input1.addEventListener('input', () => filterInput(input1))
+        if (input2) input2.addEventListener('input', () => filterInput(input2))
+
+        function submit() { confirmNamesAndEnterGame(getRawInputsFromNaming()) }
+        btnStartGame.addEventListener('click', submit)
+        btnBack.addEventListener('click', () => { confirmedNames = null; route = 'modeSelect'; render() })
+
+        function namingKeyDown(e) {
+          if (e.key === 'Enter') { e.preventDefault(); submit() }
+        }
+        window.addEventListener('keydown', namingKeyDown)
+        namingCleanup = () => { window.removeEventListener('keydown', namingKeyDown); namingCleanup = null }
       }
 
       // ===== 游戏引擎 =====
@@ -133,18 +231,18 @@
 
       function isOpposite(a, b) { return a.x + b.x === 0 && a.y + b.y === 0 }
 
-      let gameCleanup = null
-
       function renderGame() {
         clearApp()
         const mode = selectedMode
         const isSingle = mode === 'single'
 
-        app.innerHTML = `<div class="screen"><div class="neon-grid-bg"></div><div class="container" style="gap:16px;padding:20px"><div class="hud"><div class="scores"><div class="score-item p1"><span class="label">${isSingle?'得分':'玩家1'}</span><span class="value" id="score1">0</span></div>${isSingle?'':'<div class="score-item p2"><span class="label">玩家2</span><span class="value" id="score2">0</span></div>'}</div><div class="controls"><button class="btn-ctrl" id="btn-start">开始/暂停</button><button class="btn-ctrl" id="btn-restart">重新开始</button><button class="btn-ctrl btn-exit" id="btn-exit">返回</button></div></div><div style="display:flex;flex-direction:column;align-items:center;gap:10px"><canvas id="game-canvas" class="game-canvas" width="480" height="480"></canvas><div class="status-bar" id="status">按键开始</div></div><div class="footer-hint">${isSingle?'WASD 或方向键控制 · 空格重新开始':'玩家1: WASD · 玩家2: 方向键 · 空格重新开始'}</div></div></div>`
+        app.innerHTML = `<div class="screen"><div class="neon-grid-bg"></div><div class="container" style="gap:16px;padding:20px"><div class="hud"><div class="scores"><div class="score-item p1"><span class="label" id="name1">玩家1</span><span class="value" id="score1">0</span></div>${isSingle?'':'<div class="score-item p2"><span class="label" id="name2">玩家2</span><span class="value" id="score2">0</span></div>'}</div><div class="controls"><button class="btn-ctrl" id="btn-start">开始/暂停</button><button class="btn-ctrl" id="btn-restart">重新开始</button><button class="btn-ctrl btn-exit" id="btn-exit">返回</button></div></div><div style="display:flex;flex-direction:column;align-items:center;gap:10px"><canvas id="game-canvas" class="game-canvas" width="480" height="480"></canvas><div class="status-bar" id="status">按键开始</div></div><div class="footer-hint">${isSingle?'WASD 或方向键控制 · 空格重新开始':'玩家1: WASD · 玩家2: 方向键 · 空格重新开始'}</div></div></div>`
 
         const canvas = document.getElementById('game-canvas')
         const ctx = canvas.getContext('2d')
         const cellW = canvas.width / COLS, cellH = canvas.height / ROWS
+        const name1El = document.getElementById('name1')
+        const name2El = document.getElementById('name2')
         const scoreEl1 = document.getElementById('score1')
         const scoreEl2 = document.getElementById('score2')
         const statusEl = document.getElementById('status')
@@ -160,10 +258,16 @@
         function spawnFood() { const occupied = occupiedCells(); const free = []; for (let y=0;y<ROWS;y++) for (let x=0;x<COLS;x++) if (!occupied.some(c=>c.x===x&&c.y===y)) free.push({x,y}); if (free.length===0) { food=null; return false } food = free[Math.floor(Math.random()*free.length)]; return true }
 
         function reset() {
-          players = [{ id:'玩家1', snake:[{x:6,y:11},{x:5,y:11},{x:4,y:11}], dir:DIR.RIGHT, nextDir:DIR.RIGHT, score:0, alive:true, colorHead:'#9ef01a', colorBody:'green' }]
-          if (!isSingle) players.push({ id:'玩家2', snake:[{x:17,y:12},{x:18,y:12},{x:19,y:12}], dir:DIR.LEFT, nextDir:DIR.LEFT, score:0, alive:true, colorHead:'#3b9eff', colorBody:'blue' })
+          players = [{ id:'玩家1', snake:[{x:6,y:11},{x:5,y:11},{x:4,y:11}], dir:DIR.RIGHT, nextDir:DIR.RIGHT, score:0, alive:true, colorHead:'#9ef01a', colorBody:'green', name:'玩家1', rawInput:'', confirmed:false }]
+          if (!isSingle) players.push({ id:'玩家2', snake:[{x:17,y:12},{x:18,y:12},{x:19,y:12}], dir:DIR.LEFT, nextDir:DIR.LEFT, score:0, alive:true, colorHead:'#3b9eff', colorBody:'blue', name:'玩家2', rawInput:'', confirmed:false })
+          if (confirmedNames) {
+            players[0].name = confirmedNames.p1; players[0].confirmed = true
+            if (!isSingle && confirmedNames.p2) { players[1].name = confirmedNames.p2; players[1].confirmed = true }
+          }
           food = null; totalEaten = 0; speed = INIT_SPEED; running = false; gameState = '待开始'
-          spawnFood(); updateHUD(); draw(); showStatus(isSingle?'单人模式 · WASD 或方向键控制 · 按键开始':'玩家1: WASD · 玩家2: 方向键 · 按键开始')
+          spawnFood(); updateHUD(); draw()
+          if (pendingNameFallback) { showStatus('名称无效，已使用默认名称 · 按键开始'); pendingNameFallback = false }
+          else { showStatus(isSingle ? players[0].name + ' · WASD 或方向键控制 · 按键开始' : players[0].name + ': WASD · ' + players[1].name + ': 方向键 · 按键开始') }
         }
 
         function start() {
@@ -172,7 +276,8 @@
           else { running = true; gameState = '进行中'; timerId = setInterval(tick, speed); showStatus('进行中') }
         }
 
-        function updateHUD() { if (scoreEl1) scoreEl1.textContent = players[0].score; if (scoreEl2 && players[1]) scoreEl2.textContent = players[1].score }
+        function applyNamesToHUD() { if (name1El) name1El.textContent = players[0].name; if (name2El && players[1]) name2El.textContent = players[1].name }
+        function updateHUD() { if (scoreEl1) scoreEl1.textContent = players[0].score; if (scoreEl2 && players[1]) scoreEl2.textContent = players[1].score; applyNamesToHUD() }
         function showStatus(t) { statusEl.textContent = t }
 
         function computeHeads() { for (const p of players) { if (p.alive) { p.dir = p.nextDir; p._newHead = {x:p.snake[0].x+p.dir.x,y:p.snake[0].y+p.dir.y} } else p._newHead = null } }
@@ -188,8 +293,16 @@
         function tick() { computeHeads(); resolveCollisions(); applyMoves(); draw(); if (players.every(p=>!p.alive)) judgeGameOver() }
         function judgeGameOver() {
           running = false; clearInterval(timerId); gameState = '游戏结束'
-          if (isSingle) { showStatus('游戏结束 · 得分: ' + players[0].score + ' · 按 空格 重新开始') }
-          else { const s1=players[0].score, s2=players[1].score; let text; if (players[0].alive&&!players[1].alive) text='玩家1 胜出 · 玩家1: '+s1+' · 玩家2: '+s2; else if (!players[0].alive&&players[1].alive) text='玩家2 胜出 · 玩家1: '+s1+' · 玩家2: '+s2; else { if (s1>s2) text='玩家1 胜出 · 玩家1: '+s1+' · 玩家2: '+s2; else if (s1<s2) text='玩家2 胜出 · 玩家1: '+s1+' · 玩家2: '+s2; else text='平局 · 双方: '+s1 } showStatus(text + ' · 按 空格 重新开始') }
+          NamePersistence.save({ p1: players[0].name, p2: isSingle ? null : players[1].name })
+          if (isSingle) { showStatus('游戏结束 · ' + players[0].name + ': ' + players[0].score + ' · 按 空格 重新开始') }
+          else {
+            const s1=players[0].score, s2=players[1].score, n1=players[0].name, n2=players[1].name
+            let text
+            if (players[0].alive&&!players[1].alive) text=n1+' 胜出 · '+n1+': '+s1+' · '+n2+': '+s2
+            else if (!players[0].alive&&players[1].alive) text=n2+' 胜出 · '+n1+': '+s1+' · '+n2+': '+s2
+            else { if (s1>s2) text=n1+' 胜出 · '+n1+': '+s1+' · '+n2+': '+s2; else if (s1<s2) text=n2+' 胜出 · '+n1+': '+s1+' · '+n2+': '+s2; else text='平局 · '+n1+': '+s1+' · '+n2+': '+s2 }
+            showStatus(text + ' · 按 空格 重新开始')
+          }
         }
 
         function draw() {
@@ -205,13 +318,13 @@
           const p1Keys = isSingle ? P1_KEYS_FULL : P1_KEYS_WASD
           if (p1Keys[key]) { if (key.startsWith('Arrow')) e.preventDefault(); trySetDir(players[0], p1Keys[key]) }
           if (!isSingle && P2_KEYS[key]) { e.preventDefault(); trySetDir(players[1], P2_KEYS[key]) }
-          if (key===' ') { e.preventDefault(); reset(); start() }
+          if (key===' ') { e.preventDefault(); if (gameState==='游戏结束') { NamePersistence.save({ p1: players[0].name, p2: isSingle ? null : players[1].name }); route = 'naming'; render() } else { reset(); start() } }
           if (key==='Enter') start()
         }
 
         btnStart.addEventListener('click', start)
-        btnRestart.addEventListener('click', () => { reset(); start() })
-        btnExit.addEventListener('click', () => { if (gameCleanup) gameCleanup(); route = 'main'; render() })
+        btnRestart.addEventListener('click', () => { NamePersistence.save({ p1: players[0].name, p2: isSingle ? null : players[1].name }); route = 'naming'; render() })
+        btnExit.addEventListener('click', () => { if (gameCleanup) gameCleanup(); confirmedNames = null; route = 'main'; render() })
         window.addEventListener('keydown', handleKeyDown)
 
         gameCleanup = () => { clearInterval(timerId); window.removeEventListener('keydown', handleKeyDown); gameCleanup = null }
@@ -220,8 +333,10 @@
 
       function render() {
         if (gameCleanup) { gameCleanup() }
+        if (namingCleanup) { namingCleanup() }
         if (route === 'main') renderMain()
         else if (route === 'modeSelect') renderModeSelect()
+        else if (route === 'naming') renderNaming()
         else if (route === 'game') renderGame()
       }
 
