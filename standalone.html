@@ -223,7 +223,7 @@
       }
 
       // ===== 游戏引擎 =====
-      const COLS = 24, ROWS = 24, INIT_SPEED = 120, MIN_SPEED = 40, SPEED_STEP = 4
+      const COLS = 24, ROWS = 24, INIT_SPEED = 300, MIN_SPEED = 150, SPEED_STEP = 10
       const DIR = { LEFT:{x:-1,y:0}, RIGHT:{x:1,y:0}, UP:{x:0,y:-1}, DOWN:{x:0,y:1} }
       const P1_KEYS_WASD = { w:DIR.UP, W:DIR.UP, a:DIR.LEFT, A:DIR.LEFT, s:DIR.DOWN, S:DIR.DOWN, d:DIR.RIGHT, D:DIR.RIGHT }
       const P1_KEYS_FULL = Object.assign({}, P1_KEYS_WASD, { ArrowUp:DIR.UP, ArrowLeft:DIR.LEFT, ArrowDown:DIR.DOWN, ArrowRight:DIR.RIGHT })
@@ -250,7 +250,7 @@
         const btnRestart = document.getElementById('btn-restart')
         const btnExit = document.getElementById('btn-exit')
 
-        let players, food, totalEaten, speed, running, gameState, timerId
+        let players, food, totalEaten, speed, running, gameState, timerId, targetTime
 
         function roundRectFill(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fill() }
 
@@ -264,7 +264,7 @@
             players[0].name = confirmedNames.p1; players[0].confirmed = true
             if (!isSingle && confirmedNames.p2) { players[1].name = confirmedNames.p2; players[1].confirmed = true }
           }
-          food = null; totalEaten = 0; speed = INIT_SPEED; running = false; gameState = '待开始'
+          food = null; totalEaten = 0; speed = INIT_SPEED; running = false; gameState = '待开始'; targetTime = 0; timerId = null
           spawnFood(); updateHUD(); draw()
           if (pendingNameFallback) { showStatus('名称无效，已使用默认名称 · 按键开始'); pendingNameFallback = false }
           else { showStatus(isSingle ? players[0].name + ' · WASD 或方向键控制 · 按键开始' : players[0].name + ': WASD · ' + players[1].name + ': 方向键 · 按键开始') }
@@ -272,8 +272,8 @@
 
         function start() {
           if (gameState === '游戏结束') return
-          if (running) { running = false; gameState = '已暂停'; clearInterval(timerId); showStatus('已暂停') }
-          else { running = true; gameState = '进行中'; timerId = setInterval(tick, speed); showStatus('进行中') }
+          if (running) { running = false; gameState = '已暂停'; cancelTick(); showStatus('已暂停') }
+          else { running = true; gameState = '进行中'; scheduleTick(speed); showStatus('进行中') }
         }
 
         function applyNamesToHUD() { if (name1El) name1El.textContent = players[0].name; if (name2El && players[1]) name2El.textContent = players[1].name }
@@ -288,11 +288,24 @@
         function applyMoves() {
           let ate = false
           for (const p of players) { if (!p.alive) continue; if (p._newHead) p.snake.unshift(p._newHead); if (food && p._newHead && p._newHead.x===food.x && p._newHead.y===food.y) { p.score++; totalEaten++; ate = true } else p.snake.pop() }
-          if (ate) { speed = Math.max(MIN_SPEED, INIT_SPEED - totalEaten*SPEED_STEP); if (!spawnFood()) for (const p of players) p.alive=false; clearInterval(timerId); timerId = setInterval(tick, speed); updateHUD() }
+          if (ate) { speed = Math.max(MIN_SPEED, INIT_SPEED - totalEaten*SPEED_STEP); if (!spawnFood()) for (const p of players) p.alive=false; cancelTick(); scheduleTick(speed); updateHUD() }
         }
+        function scheduleTick(interval) {
+          targetTime = performance.now() + interval
+          timerId = setTimeout(function tickLoop() {
+            tick()
+            if (running && gameState !== '游戏结束') {
+              targetTime = targetTime + speed
+              let delay = targetTime - performance.now()
+              if (delay < 0) delay = 0
+              timerId = setTimeout(tickLoop, delay)
+            }
+          }, interval)
+        }
+        function cancelTick() { if (timerId != null) { clearTimeout(timerId); timerId = null } }
         function tick() { computeHeads(); resolveCollisions(); applyMoves(); draw(); if (players.every(p=>!p.alive)) judgeGameOver() }
         function judgeGameOver() {
-          running = false; clearInterval(timerId); gameState = '游戏结束'
+          running = false; cancelTick(); gameState = '游戏结束'
           NamePersistence.save({ p1: players[0].name, p2: isSingle ? null : players[1].name })
           if (isSingle) { showStatus('游戏结束 · ' + players[0].name + ': ' + players[0].score + ' · 按 空格 重新开始') }
           else {
@@ -327,7 +340,7 @@
         btnExit.addEventListener('click', () => { if (gameCleanup) gameCleanup(); confirmedNames = null; route = 'main'; render() })
         window.addEventListener('keydown', handleKeyDown)
 
-        gameCleanup = () => { clearInterval(timerId); window.removeEventListener('keydown', handleKeyDown); gameCleanup = null }
+        gameCleanup = () => { cancelTick(); window.removeEventListener('keydown', handleKeyDown); gameCleanup = null }
         reset()
       }
 
