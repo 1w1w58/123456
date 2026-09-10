@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>双人贪吃蛇对战</title>
+  <title>贪吃蛇对战</title>
   <style>
     html,body{height:100%;margin:0;font-family:Segoe UI,Roboto,Arial;}
     .wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;background:#f0f4f8}
@@ -23,7 +23,53 @@
       canvas{width:320px;height:320px}
     }
 
-    /* ===== 皮肤颜色选择界面（赛博朋克风格） ===== */
+    /* ===== 通用前置设置界面（赛博朋克风格） ===== */
+    .setup-stage{
+      position:fixed;inset:0;z-index:100;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+      background:#0b2436;color:#cfe8ff;
+      font-family:Segoe UI,Roboto,Arial;padding:16px;box-sizing:border-box;
+    }
+    .setup-stage[hidden]{display:none}
+    .stage-title{font-size:26px;font-weight:bold;color:#3b9eff;text-shadow:0 0 14px #3b9eff;letter-spacing:2px}
+    .stage-sub{font-size:13px;color:#6b8aa8;margin-top:-10px;text-align:center}
+    .stage-tip{min-height:22px;color:#ffe14d;font-size:14px;text-shadow:0 0 6px rgba(255,225,77,.6)}
+    .stage-actions{display:flex;gap:14px}
+    .stage-actions button{padding:8px 18px;border-radius:8px;cursor:pointer;font-size:15px}
+    .stage-next{background:#a24bff;color:#fff;border:1px solid #a24bff;box-shadow:0 0 12px #a24bff;font-weight:bold;animation:stage-blink 2.2s infinite}
+    .stage-next:hover{box-shadow:0 0 22px #ff5fbf}
+    .stage-back{background:transparent;color:#6b8aa8;border:1px solid #2a4a6a}
+    .stage-back:hover{color:#cfe8ff;border-color:#3b9eff}
+    @keyframes stage-blink{0%,100%{box-shadow:0 0 12px #a24bff}50%{box-shadow:0 0 20px #ff5fbf}}
+
+    /* ===== 模式选择项 ===== */
+    .mode-items{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+    .mode-item{
+      width:190px;padding:22px;border-radius:14px;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:8px;
+      border:2px solid #1a3a5a;background:#07172a;position:relative;overflow:hidden;
+      transition:transform .12s ease, box-shadow .12s ease;
+    }
+    .mode-item .mode-name{font-size:18px;font-weight:bold;color:#cfe8ff;position:relative;z-index:1}
+    .mode-item .mode-desc{font-size:12px;color:#6b8aa8;text-align:center;position:relative;z-index:1}
+    .mode-item:hover{transform:translateY(-2px)}
+    .mode-item.selected{border-color:#9ef01a;box-shadow:0 0 18px #9ef01a,inset 0 0 12px rgba(158,240,26,.25);animation:mode-flow 1.6s linear infinite}
+    @keyframes mode-flow{0%,100%{box-shadow:0 0 18px #9ef01a,inset 0 0 12px rgba(158,240,26,.25)}50%{box-shadow:0 0 28px #9ef01a,inset 0 0 16px rgba(158,240,26,.4)}}
+
+    /* ===== 名字填写 ===== */
+    .name-fields{display:flex;flex-direction:column;gap:18px;align-items:center}
+    .name-field{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .name-field .name-label{font-size:14px;font-weight:bold;letter-spacing:1px}
+    .name-field[data-player="0"] .name-label{color:#9ef01a;text-shadow:0 0 8px #9ef01a}
+    .name-field[data-player="1"] .name-label{color:#3b9eff;text-shadow:0 0 8px #3b9eff}
+    .name-field input{
+      width:240px;padding:10px 14px;border-radius:8px;
+      border:2px solid #1a3a5a;background:#07172a;color:#cfe8ff;font-size:16px;
+      outline:none;transition:border-color .12s, box-shadow .12s;box-sizing:border-box;
+    }
+    .name-field input:focus{border-color:#3b9eff;box-shadow:0 0 12px rgba(59,158,255,.4)}
+
+    /* ===== 皮肤颜色选择界面 ===== */
     .skin-selection{
       position:fixed;inset:0;z-index:100;
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
@@ -32,13 +78,14 @@
     }
     .skin-selection[hidden]{display:none}
     .skin-title{font-size:26px;font-weight:bold;color:#3b9eff;text-shadow:0 0 14px #3b9eff;letter-spacing:2px}
-    .skin-sub{font-size:13px;color:#6b8aa8;margin-top:-10px}
+    .skin-sub{font-size:13px;color:#6b8aa8;margin-top:-10px;text-align:center}
     .skin-players{display:flex;gap:36px;flex-wrap:wrap;justify-content:center}
     .skin-player{display:flex;flex-direction:column;align-items:center;gap:10px}
+    .skin-player[hidden]{display:none}
     .skin-player-name{font-size:15px;font-weight:bold;letter-spacing:1px}
     .skin-player[data-player="0"] .skin-player-name{color:#9ef01a;text-shadow:0 0 8px #9ef01a}
     .skin-player[data-player="1"] .skin-player-name{color:#3b9eff;text-shadow:0 0 8px #3b9eff}
-    .skin-items{display:flex;gap:10px}
+    .skin-items{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
     .skin-item{
       width:66px;height:74px;border-radius:12px;cursor:pointer;
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
@@ -62,17 +109,19 @@
     .skin-preview canvas{border:2px solid #1a3a5a;background:#07172a;border-radius:8px}
     .skin-tip{min-height:22px;color:#ffe14d;font-size:14px;text-shadow:0 0 6px rgba(255,225,77,.6)}
     .skin-actions{display:flex;gap:14px}
-    #skin-confirm{background:#a24bff;color:#fff;border:1px solid #a24bff;box-shadow:0 0 12px #a24bff;font-weight:bold;animation:skin-blink 2.2s infinite}
+    #skin-confirm{background:#a24bff;color:#fff;border:1px solid #a24bff;box-shadow:0 0 12px #a24bff;font-weight:bold;animation:stage-blink 2.2s infinite;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:15px}
     #skin-confirm:hover{box-shadow:0 0 22px #ff5fbf}
-    #skin-back{background:transparent;color:#6b8aa8;border:1px solid #2a4a6a}
+    #skin-back{background:transparent;color:#6b8aa8;border:1px solid #2a4a6a;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:15px}
     #skin-back:hover{color:#cfe8ff;border-color:#3b9eff}
-    @keyframes skin-blink{0%,100%{box-shadow:0 0 12px #a24bff}50%{box-shadow:0 0 20px #ff5fbf}}
     @media (max-width:520px){
-      .skin-selection{gap:12px}
+      .setup-stage{gap:12px}
+      .mode-items{flex-direction:column;gap:14px}
+      .mode-item{width:80vw;max-width:280px}
+      .name-field input{width:80vw;max-width:280px}
+      .stage-title,.skin-title{font-size:20px}
       .skin-players{flex-direction:column;gap:18px}
       .skin-item{width:56px;height:64px}
       .skin-item .swatch{width:30px;height:30px}
-      .skin-title{font-size:20px}
     }
   </style>
 </head>
@@ -98,6 +147,28 @@
       </div>
     </div>
     <div style="font-size:12px;color:#4b6b80">空格重新开始 · 回车开始/暂停 · 双人模式推荐桌面端键盘对战</div>
+  </div>
+
+  <div id="mode-selection" class="setup-stage" hidden>
+    <div class="stage-title">选择对战模式</div>
+    <div class="stage-sub">W/S 切换 · Enter 下一步 · Esc 返回</div>
+    <div class="mode-items" id="mode-items"></div>
+    <div class="stage-tip" id="mode-tip"></div>
+    <div class="stage-actions">
+      <button id="mode-next" class="stage-next">下一步</button>
+      <button id="mode-back" class="stage-back">返回</button>
+    </div>
+  </div>
+
+  <div id="name-input" class="setup-stage" hidden>
+    <div class="stage-title">填写玩家昵称</div>
+    <div class="stage-sub">中文/英文/数字/下划线 · 最长 12 字符 · Enter 下一步 · Esc 返回</div>
+    <div class="name-fields" id="name-fields"></div>
+    <div class="stage-tip" id="name-tip"></div>
+    <div class="stage-actions">
+      <button id="name-next" class="stage-next">下一步</button>
+      <button id="name-back" class="stage-back">返回</button>
+    </div>
   </div>
 
   <div id="skin-selection" class="skin-selection" hidden>
@@ -132,8 +203,11 @@
   const MIN_SPEED = 40;
   const SPEED_STEP = 4;
   const DEFAULT_SKIN_ID = 'green';
+  const DEFAULT_MODE_ID = 'double';
   const CONFIRM_DEBOUNCE_MS = 300;
   const TIP_AUTO_CLEAR_MS = 3000;
+  const NAME_MAX_LENGTH = 12;
+  const NAME_ALLOWED_REGEX = /^[\u4e00-\u9fa5A-Za-z0-9_]+$/;
   const DIR = {
     LEFT: {x:-1,y:0},
     RIGHT: {x:1,y:0},
@@ -149,7 +223,7 @@
     'ArrowDown':DIR.DOWN,'ArrowRight':DIR.RIGHT
   };
 
-  // ===== 颜色配置模块（SkinConfig） =====
+  // ===== 颜色配置模块（SkinConfig，6色：蓝/粉/紫/绿/黄/红） =====
   const SkinConfig = (() => {
     const skins = [
       {
@@ -161,6 +235,10 @@
         bodyGradient: (t) => `rgba(${Math.floor(120+t*135)},${Math.floor(40+t*55)},${Math.floor(100+t*91)},1)`
       },
       {
+        id: 'purple', name: '紫色', headColor: '#a24bff', sampleColor: '#a24bff',
+        bodyGradient: (t) => `rgba(${Math.floor(60+t*102)},${Math.floor(20+t*55)},${Math.floor(120+t*135)},1)`
+      },
+      {
         id: 'green', name: '绿色', headColor: '#9ef01a', sampleColor: '#9ef01a',
         bodyGradient: (t) => `rgba(${Math.floor(4+t*80)},${Math.floor(140+t*80)},${Math.floor(20+t*40)},1)`
       },
@@ -169,14 +247,14 @@
         bodyGradient: (t) => `rgba(${Math.floor(90+t*165)},${Math.floor(80+t*145)},${Math.floor(20+t*57)},1)`
       },
       {
-        id: 'purple', name: '紫色', headColor: '#a24bff', sampleColor: '#a24bff',
-        bodyGradient: (t) => `rgba(${Math.floor(60+t*102)},${Math.floor(20+t*55)},${Math.floor(120+t*135)},1)`
+        id: 'red', name: '红色', headColor: '#ff4d4d', sampleColor: '#ff4d4d',
+        bodyGradient: (t) => `rgba(${Math.floor(100+t*155)},${Math.floor(25+t*50)},${Math.floor(25+t*50)},1)`
       },
     ];
     const fallback = skins.map(s => ({ id:s.id, name:s.name, headColor:s.headColor, sampleColor:s.sampleColor, bodyGradient:s.bodyGradient }));
 
     function getSkinSet() {
-      if (!skins || skins.length !== 5) return fallback;
+      if (!skins || skins.length !== 6) return fallback;
       return skins;
     }
     function getSkin(id) {
@@ -186,6 +264,43 @@
       return DEFAULT_SKIN_ID;
     }
     return { getSkinSet, getSkin, getDefaultSkinId };
+  })();
+
+  // ===== 模式配置模块（ModeConfig） =====
+  const ModeConfig = (() => {
+    const modes = [
+      { id: 'single', name: '单人模式', playerCount: 1, description: '一位玩家使用 WASD 操作' },
+      { id: 'double', name: '双人模式', playerCount: 2, description: '两位玩家分别使用 WASD 与方向键' },
+    ];
+    const fallback = modes.map(m => ({ id:m.id, name:m.name, playerCount:m.playerCount, description:m.description }));
+
+    function getModeSet() {
+      if (!modes || modes.length !== 2) return fallback;
+      return modes;
+    }
+    function getMode(id) {
+      return modes.find(m => m.id === id) || null;
+    }
+    function getDefaultModeId() {
+      return DEFAULT_MODE_ID;
+    }
+    return { getModeSet, getMode, getDefaultModeId };
+  })();
+
+  // ===== 名字校验模块（NameValidator） =====
+  const NameValidator = (() => {
+    function validateName(text) {
+      if (!text || text.length === 0) return { valid: false, reason: '昵称不能为空' };
+      if (text.length > NAME_MAX_LENGTH) return { valid: false, reason: '昵称长度不能超过' + NAME_MAX_LENGTH + '字符' };
+      if (!NAME_ALLOWED_REGEX.test(text)) return { valid: false, reason: '昵称仅允许中文、英文字母、数字与下划线' };
+      return { valid: true, reason: '' };
+    }
+    function isAllowedChar(ch) {
+      return /^[\u4e00-\u9fa5A-Za-z0-9_]$/.test(ch);
+    }
+    function isNameDuplicate(n1, n2) { return n1 === n2; }
+    function getDefaultName(playerId) { return playerId === '玩家2' ? '玩家2' : '玩家1'; }
+    return { validateName, isAllowedChar, isNameDuplicate, getDefaultName, NAME_MAX_LENGTH };
   })();
 
   // ===== DOM 引用 =====
@@ -228,35 +343,32 @@
   }
 
   // ===== 游戏逻辑层 =====
-  function reset(skinMap) {
+  function reset(mode, names, skinMap) {
+    const m = mode || DEFAULT_MODE_ID;
+    const modeItem = ModeConfig.getMode(m);
+    const playerCount = modeItem ? modeItem.playerCount : 2;
     const s1Id = (skinMap && skinMap['玩家1']) || SkinConfig.getDefaultSkinId();
     const s2Id = (skinMap && skinMap['玩家2']) || 'blue';
     const s1 = SkinConfig.getSkin(s1Id) || SkinConfig.getSkin(SkinConfig.getDefaultSkinId());
     const s2 = SkinConfig.getSkin(s2Id) || SkinConfig.getSkin('blue');
+    const n1 = (names && names['玩家1']) || NameValidator.getDefaultName('玩家1');
+    const n2 = (names && names['玩家2']) || NameValidator.getDefaultName('玩家2');
     players = [
       {
-        id: '玩家1',
+        id: '玩家1', name: n1,
         snake: [{x:6,y:11},{x:5,y:11},{x:4,y:11}],
-        dir: DIR.RIGHT,
-        nextDir: DIR.RIGHT,
-        score: 0,
-        alive: true,
-        skinId: s1.id,
-        colorHead: s1.headColor,
-        colorBody: s1.id,
-      },
-      {
-        id: '玩家2',
-        snake: [{x:17,y:12},{x:18,y:12},{x:19,y:12}],
-        dir: DIR.LEFT,
-        nextDir: DIR.LEFT,
-        score: 0,
-        alive: true,
-        skinId: s2.id,
-        colorHead: s2.headColor,
-        colorBody: s2.id,
+        dir: DIR.RIGHT, nextDir: DIR.RIGHT, score: 0, alive: true,
+        skinId: s1.id, colorHead: s1.headColor, colorBody: s1.id,
       },
     ];
+    if (playerCount === 2) {
+      players.push({
+        id: '玩家2', name: n2,
+        snake: [{x:17,y:12},{x:18,y:12},{x:19,y:12}],
+        dir: DIR.LEFT, nextDir: DIR.LEFT, score: 0, alive: true,
+        skinId: s2.id, colorHead: s2.headColor, colorBody: s2.id,
+      });
+    }
     food = null;
     totalEaten = 0;
     speed = INIT_SPEED;
@@ -265,7 +377,7 @@
     spawnFood();
     updateHUD();
     draw();
-    showStatus('玩家1: WASD · 玩家2: 方向键 · 按键开始');
+    showStatus(playerCount === 1 ? n1 + ': WASD · 按键开始' : n1 + ': WASD · ' + n2 + ': 方向键 · 按键开始');
     btnStart.textContent = '开始/暂停';
     clearInterval(timerId);
   }
@@ -305,7 +417,6 @@
     return true;
   }
 
-  // 节拍阶段1：计算两蛇新蛇头
   function computeHeads() {
     for (const p of players) {
       if (p.alive) {
@@ -317,18 +428,19 @@
     }
   }
 
-  // 节拍阶段2：碰撞判定（头对头优先）
   function resolveCollisions() {
-    const h1 = players[0]._newHead;
-    const h2 = players[1]._newHead;
-    if (h1 && h2 && h1.x === h2.x && h1.y === h2.y) {
-      players[0].alive = false;
-      players[1].alive = false;
-      return;
+    const n = players.length;
+    if (n >= 2) {
+      const h1 = players[0]._newHead;
+      const h2 = players[1]._newHead;
+      if (h1 && h2 && h1.x === h2.x && h1.y === h2.y) {
+        players[0].alive = false;
+        players[1].alive = false;
+        return;
+      }
     }
-    for (let i=0; i<2; i++) {
+    for (let i=0; i<n; i++) {
       const p = players[i];
-      const other = players[1-i];
       const head = p._newHead;
       if (!head) continue;
       if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
@@ -340,14 +452,16 @@
         p.alive = false;
         continue;
       }
-      if (other.snake.some(c => c.x === head.x && c.y === head.y)) {
-        p.alive = false;
-        continue;
+      if (n >= 2) {
+        const other = players[1-i];
+        if (other.snake.some(c => c.x === head.x && c.y === head.y)) {
+          p.alive = false;
+          continue;
+        }
       }
     }
   }
 
-  // 节拍阶段3：提交位移、进食、提速
   function applyMoves() {
     let ate = false;
     for (const p of players) {
@@ -364,8 +478,7 @@
     if (ate) {
       speed = Math.max(MIN_SPEED, INIT_SPEED - totalEaten * SPEED_STEP);
       if (!spawnFood()) {
-        players[0].alive = false;
-        players[1].alive = false;
+        for (const p of players) p.alive = false;
       }
       clearInterval(timerId);
       timerId = setInterval(tick, speed);
@@ -378,7 +491,7 @@
     resolveCollisions();
     applyMoves();
     draw();
-    if (!players[0].alive && !players[1].alive) {
+    if (players.every(p => !p.alive)) {
       judgeGameOver();
     }
   }
@@ -388,19 +501,21 @@
     clearInterval(timerId);
     gameState = '游戏结束';
     let text;
-    const s1 = players[0].score;
-    const s2 = players[1].score;
-    if (players[0].alive && !players[1].alive) {
-      text = '玩家1 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
-    } else if (!players[0].alive && players[1].alive) {
-      text = '玩家2 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
+    if (players.length === 1) {
+      text = players[0].name + ' 得分: ' + players[0].score;
     } else {
-      if (s1 > s2) {
-        text = '玩家1 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
-      } else if (s1 < s2) {
-        text = '玩家2 胜出 · 玩家1: ' + s1 + ' · 玩家2: ' + s2;
+      const s1 = players[0].score;
+      const s2 = players[1].score;
+      const n1 = players[0].name;
+      const n2 = players[1].name;
+      if (players[0].alive && !players[1].alive) {
+        text = n1 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
+      } else if (!players[0].alive && players[1].alive) {
+        text = n2 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
       } else {
-        text = '平局 · 双方: ' + s1;
+        if (s1 > s2) text = n1 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
+        else if (s1 < s2) text = n2 + ' 胜出 · ' + n1 + ': ' + s1 + ' · ' + n2 + ': ' + s2;
+        else text = '平局 · 双方: ' + s1;
       }
     }
     showStatus(text + ' · 按 空格 或 点击 重新开始');
@@ -410,7 +525,12 @@
   // ===== 渲染层 =====
   function updateHUD() {
     scoreEl1.textContent = players[0].score;
-    scoreEl2.textContent = players[1].score;
+    if (players.length >= 2) {
+      scoreEl2.parentElement.style.display = '';
+      scoreEl2.textContent = players[1].score;
+    } else {
+      scoreEl2.parentElement.style.display = 'none';
+    }
   }
 
   function showStatus(text) {
@@ -456,10 +576,260 @@
     }
   }
 
-  // ===== 颜色选择界面模块（SelectionUI） =====
+  // ===== 模式选择界面模块（ModeSelectUI） =====
+  const ModeSelectUI = (() => {
+    const root = document.getElementById('mode-selection');
+    const itemsContainer = document.getElementById('mode-items');
+    const tipEl = document.getElementById('mode-tip');
+    const nextBtn = document.getElementById('mode-next');
+    const backBtn = document.getElementById('mode-back');
+    let itemEls = [];
+    let tipTimer = null;
+
+    function renderModeSelect(session) {
+      root.hidden = false;
+      itemsContainer.innerHTML = '';
+      itemEls = [];
+      const modeSet = ModeConfig.getModeSet();
+      modeSet.forEach((mode, idx) => {
+        const item = document.createElement('div');
+        item.className = 'mode-item';
+        item.dataset.idx = idx;
+        item.dataset.modeId = mode.id;
+        const name = document.createElement('div');
+        name.className = 'mode-name';
+        name.textContent = mode.name;
+        const desc = document.createElement('div');
+        desc.className = 'mode-desc';
+        desc.textContent = mode.description;
+        item.appendChild(name);
+        item.appendChild(desc);
+        itemsContainer.appendChild(item);
+        itemEls.push(item);
+      });
+      updateModeHighlight(session);
+    }
+
+    function updateModeHighlight(session) {
+      const sel = session.selectedModeId;
+      itemEls.forEach((el, idx) => {
+        const mode = ModeConfig.getModeSet()[idx];
+        el.classList.toggle('selected', mode.id === sel);
+      });
+    }
+
+    function showModeTip(text) {
+      tipEl.textContent = text;
+      if (tipTimer) clearTimeout(tipTimer);
+      tipTimer = setTimeout(() => { tipEl.textContent = ''; }, TIP_AUTO_CLEAR_MS);
+    }
+
+    function dispose() {
+      root.hidden = true;
+      if (tipTimer) clearTimeout(tipTimer);
+      tipEl.textContent = '';
+    }
+
+    return { renderModeSelect, updateModeHighlight, showModeTip, dispose, nextBtn, backBtn, root };
+  })();
+
+  // ===== 模式选择状态机（ModeSelectFSM） =====
+  const ModeSelectFSM = (() => {
+    let state = 'Idle';
+    let session = null;
+    let lastModeMemory = null;
+    let onSubmit = null;
+    let onBack = null;
+
+    function setCallbacks(cb) { onSubmit = cb.onSubmit; onBack = cb.onBack; }
+
+    function enter(ctx) {
+      if (state !== 'Idle') return;
+      state = 'Showing';
+      const selectedModeId = (ctx && ctx.lastMode) || lastModeMemory || ModeConfig.getDefaultModeId();
+      session = { active: true, selectedModeId };
+      ModeSelectUI.renderModeSelect(session);
+    }
+
+    function selectMode(modeId) {
+      if (state !== 'Showing' || !session) return;
+      if (!ModeConfig.getMode(modeId)) return;
+      session.selectedModeId = modeId;
+      ModeSelectUI.updateModeHighlight(session);
+    }
+
+    function next() {
+      if (state !== 'Showing' || !session) return;
+      if (!session.selectedModeId || !ModeConfig.getMode(session.selectedModeId)) {
+        ModeSelectUI.showModeTip('请先选择对战模式');
+        return;
+      }
+      lastModeMemory = session.selectedModeId;
+      const modeId = session.selectedModeId;
+      const cb = onSubmit;
+      state = 'Idle';
+      session = null;
+      ModeSelectUI.dispose();
+      if (cb) cb(modeId);
+    }
+
+    function back() {
+      if (state !== 'Showing' || !session) return;
+      lastModeMemory = session.selectedModeId;
+      const cb = onBack;
+      state = 'Idle';
+      session = null;
+      ModeSelectUI.dispose();
+      if (cb) cb();
+    }
+
+    return { setCallbacks, enter, selectMode, next, back, isActive: () => state === 'Showing', getSession: () => session };
+  })();
+
+  // ===== 名字填写界面模块（NameInputUI） =====
+  const NameInputUI = (() => {
+    const root = document.getElementById('name-input');
+    const fieldsContainer = document.getElementById('name-fields');
+    const tipEl = document.getElementById('name-tip');
+    const nextBtn = document.getElementById('name-next');
+    const backBtn = document.getElementById('name-back');
+    let inputEls = [];
+    let tipTimer = null;
+
+    function renderNameInput(session) {
+      root.hidden = false;
+      fieldsContainer.innerHTML = '';
+      inputEls = [];
+      session.players.forEach((pl, pi) => {
+        const field = document.createElement('div');
+        field.className = 'name-field';
+        field.dataset.player = pi;
+        const label = document.createElement('div');
+        label.className = 'name-label';
+        label.textContent = pl.playerId;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.maxLength = NameValidator.NAME_MAX_LENGTH;
+        input.value = session.entries[pl.playerId].value;
+        input.dataset.playerId = pl.playerId;
+        field.appendChild(label);
+        field.appendChild(input);
+        fieldsContainer.appendChild(field);
+        inputEls.push(input);
+      });
+      if (inputEls[0]) inputEls[0].focus();
+    }
+
+    function updateFieldValue(playerId, text) {
+      const input = inputEls.find(i => i.dataset.playerId === playerId);
+      if (input) input.value = text;
+    }
+
+    function showNameTip(text) {
+      tipEl.textContent = text;
+      if (tipTimer) clearTimeout(tipTimer);
+      tipTimer = setTimeout(() => { tipEl.textContent = ''; }, TIP_AUTO_CLEAR_MS);
+    }
+
+    function focusInput(playerId) {
+      const input = inputEls.find(i => i.dataset.playerId === playerId);
+      if (input) input.focus();
+    }
+
+    function dispose() {
+      root.hidden = true;
+      if (tipTimer) clearTimeout(tipTimer);
+      tipEl.textContent = '';
+    }
+
+    return { renderNameInput, updateFieldValue, showNameTip, focusInput, dispose, nextBtn, backBtn, root };
+  })();
+
+  // ===== 名字填写状态机（NameInputFSM） =====
+  const NameInputFSM = (() => {
+    let state = 'Idle';
+    let session = null;
+    const lastNameMemory = { '玩家1': null, '玩家2': null };
+    let onSubmit = null;
+    let onBack = null;
+
+    function setCallbacks(cb) { onSubmit = cb.onSubmit; onBack = cb.onBack; }
+
+    function enter(ctx) {
+      if (state !== 'Idle') return;
+      if (!ctx || !ctx.mode) { console.warn('[NameInputFSM] missing mode'); return; }
+      state = 'Showing';
+      const modeItem = ModeConfig.getMode(ctx.mode);
+      const playerCount = modeItem ? modeItem.playerCount : 2;
+      const playerIds = playerCount === 1 ? ['玩家1'] : ['玩家1', '玩家2'];
+      session = {
+        active: true,
+        mode: ctx.mode,
+        players: playerIds.map(id => ({ playerId: id })),
+        entries: {},
+      };
+      playerIds.forEach(id => {
+        session.entries[id] = { value: lastNameMemory[id] || NameValidator.getDefaultName(id) };
+      });
+      NameInputUI.renderNameInput(session);
+    }
+
+    function updateName(playerId, text) {
+      if (state !== 'Showing' || !session) return;
+      if (!session.entries[playerId]) return;
+      let filtered = '';
+      for (const ch of text) {
+        if (NameValidator.isAllowedChar(ch)) filtered += ch;
+        if (filtered.length >= NameValidator.NAME_MAX_LENGTH) break;
+      }
+      session.entries[playerId].value = filtered;
+      NameInputUI.updateFieldValue(playerId, filtered);
+    }
+
+    function next() {
+      if (state !== 'Showing' || !session) return;
+      const playerIds = session.players.map(p => p.playerId);
+      for (const playerId of playerIds) {
+        const v = NameValidator.validateName(session.entries[playerId].value);
+        if (!v.valid) {
+          NameInputUI.showNameTip(v.reason);
+          NameInputUI.focusInput(playerId);
+          return;
+        }
+      }
+      if (session.mode === 'double' && playerIds.length === 2) {
+        if (NameValidator.isNameDuplicate(session.entries['玩家1'].value, session.entries['玩家2'].value)) {
+          NameInputUI.showNameTip('两位玩家昵称不能相同');
+          return;
+        }
+      }
+      const names = {};
+      playerIds.forEach(id => { names[id] = session.entries[id].value; lastNameMemory[id] = names[id]; });
+      const cb = onSubmit;
+      state = 'Idle';
+      session = null;
+      NameInputUI.dispose();
+      if (cb) cb(names);
+    }
+
+    function back() {
+      if (state !== 'Showing' || !session) return;
+      session.players.forEach(p => { lastNameMemory[p.playerId] = session.entries[p.playerId].value; });
+      const cb = onBack;
+      state = 'Idle';
+      session = null;
+      NameInputUI.dispose();
+      if (cb) cb();
+    }
+
+    return { setCallbacks, enter, updateName, next, back, isActive: () => state === 'Showing', getSession: () => session };
+  })();
+
+  // ===== 颜色选择界面模块（SelectionUI，扩展单人模式） =====
   const SelectionUI = (() => {
     const root = document.getElementById('skin-selection');
     const itemsContainers = [document.getElementById('skin-items-0'), document.getElementById('skin-items-1')];
+    const playerEls = [itemsContainers[0].parentElement, itemsContainers[1].parentElement];
     const tipEl = document.getElementById('skin-tip');
     const confirmBtn = document.getElementById('skin-confirm');
     const backBtn = document.getElementById('skin-back');
@@ -485,28 +855,35 @@
       currentSession = session;
       root.hidden = false;
       const skinSet = SkinConfig.getSkinSet();
+      const playerCount = session.mode === 'single' ? 1 : 2;
       for (let pi = 0; pi < 2; pi++) {
-        const container = itemsContainers[pi];
-        container.innerHTML = '';
-        itemEls[pi] = [];
-        skinSet.forEach((skin, idx) => {
-          const item = document.createElement('div');
-          item.className = 'skin-item';
-          item.dataset.player = pi;
-          item.dataset.idx = idx;
-          item.dataset.skinId = skin.id;
-          const swatch = document.createElement('div');
-          swatch.className = 'swatch';
-          swatch.style.background = skin.sampleColor;
-          swatch.style.color = skin.sampleColor;
-          const label = document.createElement('div');
-          label.className = 'label';
-          label.textContent = skin.name;
-          item.appendChild(swatch);
-          item.appendChild(label);
-          container.appendChild(item);
-          itemEls[pi].push(item);
-        });
+        if (pi < playerCount) {
+          playerEls[pi].hidden = false;
+          const container = itemsContainers[pi];
+          container.innerHTML = '';
+          itemEls[pi] = [];
+          skinSet.forEach((skin, idx) => {
+            const item = document.createElement('div');
+            item.className = 'skin-item';
+            item.dataset.player = pi;
+            item.dataset.idx = idx;
+            item.dataset.skinId = skin.id;
+            const swatch = document.createElement('div');
+            swatch.className = 'swatch';
+            swatch.style.background = skin.sampleColor;
+            swatch.style.color = skin.sampleColor;
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.textContent = skin.name;
+            item.appendChild(swatch);
+            item.appendChild(label);
+            container.appendChild(item);
+            itemEls[pi].push(item);
+          });
+        } else {
+          playerEls[pi].hidden = true;
+          itemEls[pi] = [];
+        }
       }
       updateHighlight(session);
       startPreview();
@@ -514,7 +891,8 @@
 
     function updateHighlight(session) {
       const skinSet = SkinConfig.getSkinSet();
-      for (let pi = 0; pi < 2; pi++) {
+      const playerCount = session.mode === 'single' ? 1 : 2;
+      for (let pi = 0; pi < playerCount; pi++) {
         const sel = session.players[pi].selectedSkinId;
         skinSet.forEach((skin, idx) => {
           const el = itemEls[pi][idx];
@@ -540,7 +918,8 @@
       pctx.fillStyle = '#07172a';
       pctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
       const segW = 18, segH = 14, gap = 2, segs = 7;
-      for (let pi = 0; pi < 2; pi++) {
+      const playerCount = currentSession.mode === 'single' ? 1 : 2;
+      for (let pi = 0; pi < playerCount; pi++) {
         const sel = currentSession.players[pi].selectedSkinId;
         const skin = SkinConfig.getSkin(sel) || SkinConfig.getSkin(SkinConfig.getDefaultSkinId());
         const yBase = pi * (segH + 14) + 10;
@@ -579,7 +958,7 @@
     };
   })();
 
-  // ===== 颜色选择状态机模块（SelectionFSM） =====
+  // ===== 颜色选择状态机（SelectionFSM，扩展按模式裁剪玩家） =====
   const SelectionFSM = (() => {
     let state = 'Idle';
     let session = null;
@@ -596,20 +975,23 @@
         return;
       }
       state = 'Showing';
+      const mode = ctx.mode || 'double';
+      const modeItem = ModeConfig.getMode(mode);
+      const playerCount = modeItem ? modeItem.playerCount : 2;
+      const players = playerCount === 1 ? [ctx.players[0]] : ctx.players;
       const skinSet = SkinConfig.getSkinSet();
       session = {
         active: true,
-        mode: ctx.mode || 'double',
-        players: ctx.players.map(pl => ({
+        mode,
+        players: players.map(pl => ({
           playerId: pl.id,
-          selectedSkinId: lastSelectionMemory[pl.id] || SkinConfig.getDefaultSkinId(),
+          selectedSkinId: (ctx.lastSelections && ctx.lastSelections[pl.id]) || lastSelectionMemory[pl.id] || SkinConfig.getDefaultSkinId(),
           confirmed: false,
         })),
         skinSet,
         lastConfirmAt: 0,
       };
       SelectionUI.renderSelection(session);
-      console.debug('[SelectionFSM] enterSelection', session);
     }
 
     function selectColor(playerId, skinId) {
@@ -619,7 +1001,6 @@
       if (!SkinConfig.getSkin(skinId)) return;
       pl.selectedSkinId = skinId;
       SelectionUI.updateHighlight(session);
-      console.debug('[SelectionFSM] selectColor', playerId, skinId);
     }
 
     function confirm() {
@@ -643,8 +1024,7 @@
       }
       state = 'Submitted';
       const skinMap = {};
-      session.players.forEach(p => { skinMap[p.playerId] = p.selectedSkinId; });
-      session.players.forEach(p => { lastSelectionMemory[p.playerId] = p.selectedSkinId; });
+      session.players.forEach(p => { skinMap[p.playerId] = p.selectedSkinId; lastSelectionMemory[p.playerId] = p.selectedSkinId; });
       const result = { ok: true, skinMap, mode: session.mode };
       SelectionUI.dispose();
       const cb = onSubmit;
@@ -671,9 +1051,24 @@
     };
   })();
 
-  // ===== 输入适配模块（InputAdapter） =====
+  // ===== 输入适配模块（InputAdapter，多环节分发） =====
   const InputAdapter = (() => {
     function init() {
+      ModeSelectUI.root.addEventListener('click', (e) => {
+        const item = e.target.closest('.mode-item');
+        if (item) { ModeSelectFSM.selectMode(item.dataset.modeId); return; }
+      });
+      ModeSelectUI.nextBtn.addEventListener('click', () => { ModeSelectFSM.next(); });
+      ModeSelectUI.backBtn.addEventListener('click', () => { ModeSelectFSM.back(); });
+
+      NameInputUI.root.addEventListener('input', (e) => {
+        if (e.target.tagName === 'INPUT') {
+          NameInputFSM.updateName(e.target.dataset.playerId, e.target.value);
+        }
+      });
+      NameInputUI.nextBtn.addEventListener('click', () => { NameInputFSM.next(); });
+      NameInputUI.backBtn.addEventListener('click', () => { NameInputFSM.back(); });
+
       SelectionUI.root.addEventListener('click', (e) => {
         const item = e.target.closest('.skin-item');
         if (item) {
@@ -687,7 +1082,17 @@
       SelectionUI.backBtn.addEventListener('click', () => { SelectionFSM.goBack(); });
     }
 
-    function moveCursor(playerId, delta) {
+    function moveModeCursor(delta) {
+      const session = ModeSelectFSM.getSession();
+      if (!session) return;
+      const modeSet = ModeConfig.getModeSet();
+      let idx = modeSet.findIndex(m => m.id === session.selectedModeId);
+      if (idx < 0) idx = 0;
+      idx = (idx + delta + modeSet.length) % modeSet.length;
+      ModeSelectFSM.selectMode(modeSet[idx].id);
+    }
+
+    function moveColorCursor(playerId, delta) {
       const session = SelectionFSM.getSession();
       if (!session) return;
       const pl = session.players.find(p => p.playerId === playerId);
@@ -699,13 +1104,32 @@
       SelectionFSM.selectColor(playerId, skinSet[idx].id);
     }
 
-    function handleKeydown(e) {
-      if (!SelectionFSM.isActive()) return false;
+    function handleModeKeydown(e) {
       const key = e.key;
-      if (key === 'a' || key === 'A') { e.preventDefault(); moveCursor('玩家1', -1); return true; }
-      if (key === 'd' || key === 'D') { e.preventDefault(); moveCursor('玩家1', 1); return true; }
-      if (key === 'ArrowLeft') { e.preventDefault(); moveCursor('玩家2', -1); return true; }
-      if (key === 'ArrowRight') { e.preventDefault(); moveCursor('玩家2', 1); return true; }
+      if (key === 'w' || key === 'W' || key === 'ArrowUp') { e.preventDefault(); moveModeCursor(-1); return true; }
+      if (key === 's' || key === 'S' || key === 'ArrowDown') { e.preventDefault(); moveModeCursor(1); return true; }
+      if (key === 'Enter') { e.preventDefault(); ModeSelectFSM.next(); return true; }
+      if (key === 'Escape') { e.preventDefault(); ModeSelectFSM.back(); return true; }
+      e.preventDefault();
+      return true;
+    }
+
+    function handleNameKeydown(e) {
+      const key = e.key;
+      if (key === 'Enter') { e.preventDefault(); NameInputFSM.next(); return true; }
+      if (key === 'Escape') { e.preventDefault(); NameInputFSM.back(); return true; }
+      if (key === ' ') { e.preventDefault(); return true; }
+      return true;
+    }
+
+    function handleColorKeydown(e) {
+      const key = e.key;
+      const session = SelectionFSM.getSession();
+      const isSingle = session && session.mode === 'single';
+      if (key === 'a' || key === 'A') { e.preventDefault(); moveColorCursor('玩家1', -1); return true; }
+      if (key === 'd' || key === 'D') { e.preventDefault(); moveColorCursor('玩家1', 1); return true; }
+      if (!isSingle && key === 'ArrowLeft') { e.preventDefault(); moveColorCursor('玩家2', -1); return true; }
+      if (!isSingle && key === 'ArrowRight') { e.preventDefault(); moveColorCursor('玩家2', 1); return true; }
       if (key === 'Enter') { e.preventDefault(); SelectionFSM.confirm(); return true; }
       if (key === 'Escape') { e.preventDefault(); SelectionFSM.goBack(); return true; }
       if (key === ' ' || key === 'w' || key === 'W' || key === 's' || key === 'S'
@@ -713,28 +1137,74 @@
         e.preventDefault();
         return true;
       }
+      if (isSingle && (key === 'ArrowLeft' || key === 'ArrowRight')) { e.preventDefault(); return true; }
       return true;
+    }
+
+    function handleKeydown(e) {
+      if (ModeSelectFSM.isActive()) return handleModeKeydown(e);
+      if (NameInputFSM.isActive()) return handleNameKeydown(e);
+      if (SelectionFSM.isActive()) return handleColorKeydown(e);
+      return false;
     }
 
     return { init, handleKeydown };
   })();
 
-  // ===== 流程编排衔接模块（FlowBridge） =====
-  const FlowBridge = (() => {
-    const DEFAULT_CTX = { mode: 'double', players: [{ id: '玩家1', name: '玩家1' }, { id: '玩家2', name: '玩家2' }] };
+  // ===== 流程编排模块（SetupFlow，三步串联） =====
+  const SetupFlow = (() => {
+    let stage = 'Idle';
+    let mode = null;
+    let names = null;
 
     function init() {
+      ModeSelectFSM.setCallbacks({
+        onSubmit: (modeId) => {
+          mode = modeId;
+          stage = 'NameStage';
+          NameInputFSM.enter({ mode });
+        },
+        onBack: () => {
+          stage = 'Idle';
+          startSetup();
+        },
+      });
+      NameInputFSM.setCallbacks({
+        onSubmit: (n) => {
+          names = n;
+          stage = 'ColorStage';
+          const modeItem = ModeConfig.getMode(mode);
+          const playerCount = modeItem ? modeItem.playerCount : 2;
+          const players = playerCount === 1
+            ? [{ id: '玩家1', name: names['玩家1'] }]
+            : [{ id: '玩家1', name: names['玩家1'] }, { id: '玩家2', name: names['玩家2'] }];
+          SelectionFSM.enterSelection({ mode, players });
+        },
+        onBack: () => {
+          stage = 'ModeStage';
+          ModeSelectFSM.enter({});
+        },
+      });
       SelectionFSM.setCallbacks({
-        onSubmit: (result) => { reset(result.skinMap); start(); },
-        onBack: () => { onPreFlowComplete(DEFAULT_CTX); }
+        onSubmit: (result) => {
+          stage = 'Submitted';
+          reset(mode, names, result.skinMap);
+          start();
+          stage = 'Idle';
+        },
+        onBack: () => {
+          stage = 'NameStage';
+          NameInputFSM.enter({ mode });
+        },
       });
     }
 
-    function onPreFlowComplete(ctx) {
-      SelectionFSM.enterSelection(ctx || DEFAULT_CTX);
+    function startSetup() {
+      stage = 'ModeStage';
+      ModeSelectFSM.enter({});
     }
 
-    return { init, onPreFlowComplete, DEFAULT_CTX };
+    return { init, startSetup };
   })();
 
   // ===== 输入分发层 =====
@@ -754,7 +1224,7 @@
     if (P1_KEYS[key]) {
       trySetDir(players[0], P1_KEYS[key]);
     }
-    if (P2_KEYS[key]) {
+    if (players.length >= 2 && P2_KEYS[key]) {
       e.preventDefault();
       trySetDir(players[1], P2_KEYS[key]);
     }
@@ -783,9 +1253,9 @@
 
   // ===== 初始化 =====
   reset();
-  FlowBridge.init();
+  SetupFlow.init();
   InputAdapter.init();
-  FlowBridge.onPreFlowComplete(FlowBridge.DEFAULT_CTX);
+  SetupFlow.startSetup();
 
 })();
 </script>
